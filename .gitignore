@@ -1,0 +1,31 @@
+# 환경변수 (실제 값 포함 파일)
+.env
+.env.local
+.env.*.local
+
+# GCP 서비스 계정 키
+*service-account*.json
+*.json.key
+gcp-key*.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Node.js
+node_modules/
+.next/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Claude Code 로컬 설정
+.claude/settings.local.json
