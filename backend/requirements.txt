@@ -1,0 +1,41 @@
+# 백엔드 의존성 목록
+# pip install -r requirements.txt
+
+# 웹 프레임워크
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+python-multipart>=0.0.12
+
+# 스키마 검증
+pydantic>=2.9.0
+pydantic-settings>=2.6.0
+
+# HTTP 클라이언트 (Naver API 등)
+httpx>=0.27.0
+
+# Anthropic Claude (Vision + Web Search)
+anthropic>=0.39.0
+
+# GCP — Cloud Storage + Vertex AI Imagen 4
+google-cloud-storage>=2.18.0
+google-genai>=1.2.0
+
+# 이미지 처리 (워터마크)
+Pillow>=11.0.0
+
+# SVG 2D 배치도 생성
+svgwrite>=1.4.3
+
+# Supabase DB + Auth
+supabase>=2.9.0
+
+# 트렌드 캐시 (24h TTLCache)
+cachetools>=5.5.0
+
+# JWT 검증 (Supabase HS256)
+python-jose[cryptography]>=3.3.0
+
+# 테스트
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
+pytest-mock>=3.14.0

@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>AI 인테리어 추천 서비스 — 서비스 개요서 v2</title>
+<style>
+/*
+  팔레트
+  다크 브라운  : #3d2008
+  미디엄 브라운: #6b3d18
+  골든 브라운  : #a87040
+  액센트 골드  : #c4922a
+  크림         : #fdf5ec
+  베이지       : #f7ede0
+*/
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: '맑은 고딕', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  font-size: 10pt;
+  color: #2a1a0a;
+  background: #fff;
+  line-height: 1.6;
+}
+
+/* ══════════════ 1. 표지 ══════════════ */
+.cover {
+  background: linear-gradient(135deg, #150700 0%, #2e1404 45%, #4a2810 75%, #6b3d18 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  min-height: 340px;
+}
+
+/* 장식 원 */
+.cover-ring1 {
+  position: absolute;
+  right: -90px; top: -90px;
+  width: 380px; height: 380px;
+  border-radius: 50%;
+  border: 70px solid rgba(255,255,255,0.03);
+}
+.cover-ring2 {
+  position: absolute;
+  right: 110px; top: -40px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  border: 35px solid rgba(196,146,42,0.1);
+}
+.cover-ring3 {
+  position: absolute;
+  left: -60px; bottom: -60px;
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  border: 40px solid rgba(255,255,255,0.02);
+}
+
+/* 좌측 골든 세로선 */
+.cover-accent-line {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+  background: linear-gradient(180deg, #c4922a 0%, #8b5020 60%, transparent 100%);
+}
+
+.cover-body {
+  padding: 52px 56px 36px;
+  position: relative;
+  z-index: 1;
+}
+
+.cover-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(196,146,42,0.18);
+  border: 1px solid rgba(196,146,42,0.35);
+  border-radius: 20px;
+  padding: 5px 16px;
+  font-size: 7.5pt;
+  letter-spacing: 2px;
+  color: #c4a060;
+  text-transform: uppercase;
+  margin-bottom: 22px;
+}
+.cover-badge::before {
+  content: '';
+  width: 7px; height: 7px;
+  background: #c4922a;
+  border-radius: 50%;
+}
+
+.cover h1 {
+  font-size: 38pt;
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -1.5px;
+  margin-bottom: 18px;
+}
+.cover h1 .accent { color: #c4922a; }
+
+.cover-slogan {
+  font-size: 11.5pt;
+  color: #c4a882;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* 하단 KPI 바 */
+.cover-kpi-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: rgba(0,0,0,0.28);
+  border-top: 1px solid rgba(196,146,42,0.18);
+  position: relative;
+  z-index: 1;
+}
+.kpi-item {
+  padding: 20px 28px;
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+.kpi-item:last-child { border-right: none; }
+.kpi-num {
+  font-size: 24pt;
+  font-weight: 900;
+  color: #c4922a;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+.kpi-label {
+  font-size: 8pt;
+  color: #a08060;
+  line-height: 1.5;
+}
+
+/* 메타 바 */
+.cover-meta {
+  display: flex;
+  justify-content: flex-end;
+  gap: 24px;
+  padding: 9px 56px;
+  background: rgba(0,0,0,0.18);
+  font-size: 8pt;
+  color: #7a6050;
+  position: relative;
+  z-index: 1;
+}
+
+/* ══════════════ 공통 섹션 헤더 ══════════════ */
+.page { padding: 28px 44px 24px; }
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.section-num {
+  background: #3d2008;
+  color: #c4922a;
+  font-size: 7.5pt;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 12px;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+}
+.section-title {
+  font-size: 14pt;
+  font-weight: 800;
+  color: #3d2008;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+.section-line {
+  flex: 1;
+  height: 1.5px;
+  background: linear-gradient(90deg, #d4b896, transparent);
+  border-radius: 2px;
+}
+
+hr.divider {
+  border: none;
+  border-top: 1px solid #ecdcc8;
+}
+
+/* ══════════════ 2. 서비스 개요 (2-column) ══════════════ */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.def-box {
+  background: linear-gradient(135deg, #fdf5ec, #f5e8d4);
+  border-left: 4px solid #3d2008;
+  border-radius: 0 8px 8px 0;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  font-size: 10pt;
+  line-height: 1.8;
+  color: #2a1a0a;
+}
+.def-box strong { color: #6b3d18; }
+
+.mv-stack { display: flex; flex-direction: column; gap: 10px; }
+.mv-card {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(61,32,8,0.09);
+}
+.mv-head {
+  padding: 8px 15px;
+  font-weight: 700;
+  font-size: 9.5pt;
+  color: #fff;
+  background: #3d2008;
+}
+.mv-head.v2 { background: #6b3d18; }
+.mv-body {
+  padding: 12px 15px;
+  font-size: 9.5pt;
+  background: #fdf5ec;
+  color: #3a2010;
+  line-height: 1.65;
+}
+
+/* 시장 차트 */
+.market-chart {
+  background: #fdf5ec;
+  border-radius: 10px;
+  padding: 18px;
+  border: 1.5px solid #d4b896;
+}
+.chart-title {
+  font-size: 10pt;
+  font-weight: 700;
+  color: #3d2008;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e8d4b8;
+}
+
+.mbar-group { margin-bottom: 12px; }
+.mbar-label { font-size: 8.5pt; color: #4a3020; font-weight: 600; margin-bottom: 4px; }
+.mbar-track {
+  height: 22px;
+  background: #e8d4b8;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.mbar-fill {
+  height: 100%;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 8pt;
+  font-weight: 700;
+  color: #fff;
+}
+.mbar-note { font-size: 8pt; color: #8a6050; margin-top: 3px; }
+
+/* 도넛 차트 */
+.donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #d4b896;
+}
+.donut {
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  background: conic-gradient(#8b3010 0% 30%, #d4b896 30% 100%);
+  flex-shrink: 0;
+  position: relative;
+}
+.donut::after {
+  content: '70%';
+  position: absolute;
+  inset: 22px;
+  background: #fdf5ec;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11pt;
+  font-weight: 900;
+  color: #d4b896;
+}
+.donut-legend { flex: 1; }
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 8.5pt;
+  margin: 4px 0;
+}
+.legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ══════════════ 3. 문제 정의 ══════════════ */
+.prob-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.prob-card {
+  background: #fdf5ec;
+  border: 1.5px solid #d4a880;
+  border-radius: 8px;
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+.prob-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: #8b4020;
+}
+.prob-num {
+  font-size: 7.5pt;
+  font-weight: 800;
+  color: #a05030;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+}
+.prob-title {
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: #2a1a0a;
+  margin-bottom: 5px;
+}
+.prob-desc { font-size: 9pt; color: #5a4030; line-height: 1.6; }
+.prob-card.full { grid-column: 1 / -1; }
+
+.prob-insight {
+  background: linear-gradient(135deg, #3d2008, #6b3d18);
+  color: #f0dcc0;
+  border-radius: 8px;
+  padding: 14px 20px;
+  font-size: 9.5pt;
+  line-height: 1.75;
+  margin-bottom: 14px;
+  border-left: 4px solid #c4922a;
+}
+.prob-insight strong { color: #c4922a; }
+
+/* ══════════════ 4. AI 프로세스 플로우 ══════════════ */
+.flow-diagram {
+  display: flex;
+  align-items: stretch;
+  background: linear-gradient(135deg, #fceee0, #f3e3cc);
+  border-radius: 12px;
+  padding: 22px 14px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.flow-diagram::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(ellipse, rgba(196,146,42,0.08), transparent);
+  transform: translateX(-50%);
+}
+
+.flow-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0 6px;
+  position: relative;
+}
+.flow-arrow {
+  position: absolute;
+  right: -10px;
+  top: 24px;
+  color: #c4922a;
+  font-size: 14pt;
+  z-index: 2;
+  font-weight: 900;
+}
+
+.flow-icon-wrap {
+  width: 54px; height: 54px;
+  background: #3d2008;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20pt;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 14px rgba(61,32,8,0.28);
+  flex-shrink: 0;
+}
+.flow-step-num {
+  font-size: 7pt;
+  font-weight: 800;
+  color: #c4922a;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.flow-step-name {
+  font-size: 9pt;
+  font-weight: 700;
+  color: #2a1a0a;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+.flow-step-detail {
+  font-size: 7.5pt;
+  color: #6a4a2a;
+  line-height: 1.4;
+}
+.flow-tech {
+  font-size: 7pt;
+  background: rgba(61,32,8,0.12);
+  color: #6b3d18;
+  border-radius: 10px;
+  padding: 2px 8px;
+  margin-top: 6px;
+  font-weight: 700;
+}
+
+/* 비교표 */
+table.compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(61,32,8,0.08);
+}
+table.compare th {
+  padding: 10px 14px;
+  text-align: center;
+  font-weight: 700;
+  color: #fff;
+}
+table.compare th:first-child { background: #8a7060; text-align: left; }
+table.compare th.ours   { background: #3d2008; }
+table.compare th.other  { background: #5a4030; }
+table.compare td {
+  padding: 8px 14px;
+  border-bottom: 1px solid #e8d4b8;
+  text-align: center;
+  vertical-align: middle;
+}
+table.compare td:first-child { text-align: left; font-weight: 600; }
+table.compare tr:last-child td { border-bottom: none; }
+table.compare tr:nth-child(odd)  td { background: #fdf5ec; }
+table.compare tr:nth-child(even) td { background: #fff; }
+.check { color: #4a8040; font-weight: 700; }
+.cross  { color: #8b3010; font-weight: 700; }
+
+/* ══════════════ 5. 주요 기능 (3-column) ══════════════ */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.feature-card {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1.5px solid #d4b896;
+  box-shadow: 0 2px 10px rgba(61,32,8,0.07);
+}
+.feature-card-head {
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+}
+.feature-icon { font-size: 18pt; }
+.feature-card-title { font-size: 10pt; font-weight: 700; line-height: 1.3; }
+.fc1 .feature-card-head { background: linear-gradient(135deg, #3d2008, #6b3d18); }
+.fc2 .feature-card-head { background: linear-gradient(135deg, #5a3010, #8b5020); }
+.fc3 .feature-card-head { background: linear-gradient(135deg, #6b3d18, #9a6030); }
+.fc4 .feature-card-head { background: linear-gradient(135deg, #4a2810, #7a4822); }
+.fc5 .feature-card-head { background: linear-gradient(135deg, #7a3520, #a86040); }
+.fc6 .feature-card-head { background: linear-gradient(135deg, #3d2808, #6b4820); }
+.fc7 .feature-card-head { background: linear-gradient(135deg, #5a2010, #8b4530); }
+.fc8 .feature-card-head { background: linear-gradient(135deg, #2a1808, #5a3818); }
+.fc9 .feature-card-head { background: linear-gradient(135deg, #6b4010, #9a6528); }
+.fc10 .feature-card-head { background: linear-gradient(135deg, #4a1a30, #7a3050); }
+.fc10 { grid-column: 1 / -1; }
+.phase-badge { display:inline-block; font-size:6pt; font-weight:800; padding:2px 8px; border-radius:3px; margin-bottom:6px; letter-spacing:0.5px; }
+.phase-mvp  { background:#1e4d2b; color:#a8d8b8; }
+.phase-p2   { background:#1a2e5a; color:#a8c0e8; }
+.phase-p3   { background:#4a1a30; color:#e8b0cc; }
+
+.solution-branch {
+  margin-top: 14px;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #3a1228, #6a2848);
+  color: #f0dcc0;
+  border-radius: 8px;
+  border-left: 4px solid #c4922a;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 16px;
+  align-items: start;
+}
+.branch-badge {
+  background: #c4922a;
+  color: #1a0800;
+  font-size: 7pt;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+.branch-content {}
+.branch-title {
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: #ffd9b8;
+  margin-bottom: 5px;
+}
+.branch-flow {
+  font-size: 8pt;
+  color: #d4b896;
+  font-family: monospace;
+  line-height: 1.7;
+  margin-bottom: 5px;
+}
+.branch-note {
+  font-size: 7.5pt;
+  color: #b09070;
+  font-style: italic;
+}
+
+.feature-card-body {
+  padding: 12px 14px;
+  background: #fdf5ec;
+  font-size: 9pt;
+  color: #5a4030;
+  line-height: 1.6;
+}
+.feature-tag {
+  display: inline-block;
+  background: rgba(61,32,8,0.09);
+  color: #6b3d18;
+  font-size: 7.5pt;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 2px 9px;
+  margin-top: 8px;
+}
+
+/* ══════════════ 6. 성과 지표 (2-column) ══════════════ */
+.metrics-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.metric-card {
+  border-radius: 10px;
+  padding: 18px 14px;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(61,32,8,0.16);
+}
+.metric-card .big-num {
+  font-size: 24pt;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.metric-card .big-label { font-size: 8.5pt; opacity: 0.9; line-height: 1.4; }
+.m1 { background: linear-gradient(135deg, #5a2808, #9a5030); }
+.m2 { background: linear-gradient(135deg, #3d2008, #7a4020); }
+.m3 { background: linear-gradient(135deg, #6b3d18, #a06030); }
+.m4 { background: linear-gradient(135deg, #4a2810, #8b5520); }
+
+/* 기술 스택 */
+.tech-stack {
+  background: linear-gradient(135deg, #1a0800, #3d2008);
+  border-radius: 10px;
+  padding: 16px 18px;
+  color: #fff;
+}
+.tech-stack-title {
+  font-size: 9pt;
+  font-weight: 700;
+  color: #c4922a;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+.tech-layers {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.tech-layer-name {
+  font-size: 7.5pt;
+  color: #a08060;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+.tech-item {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(196,146,42,0.18);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 8pt;
+  font-weight: 600;
+  color: #d4b896;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.tech-item.hl {
+  background: rgba(196,146,42,0.15);
+  border-color: rgba(196,146,42,0.4);
+  color: #c4922a;
+}
+
+/* 정확도 바 차트 */
+.accuracy-section {
+  background: #fdf5ec;
+  border-radius: 10px;
+  padding: 18px;
+  border: 1.5px solid #d4b896;
+}
+.acc-title {
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: #3d2008;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8d4b8;
+}
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  font-size: 9pt;
+}
+.bar-bg {
+  flex: 1;
+  background: #e8d4b8;
+  border-radius: 20px;
+  height: 18px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  font-size: 8pt;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+}
+.bar-pct { font-weight: 700; min-width: 40px; }
+
+/* 로드맵 */
+.roadmap {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid #d4b896;
+  margin-top: 14px;
+}
+.roadmap-item {
+  flex: 1;
+  padding: 12px 14px;
+  border-right: 1px solid #d4b896;
+  background: #fdf5ec;
+}
+.roadmap-item:last-child { border-right: none; }
+.roadmap-phase {
+  font-size: 7.5pt;
+  font-weight: 800;
+  color: #8b4020;
+  letter-spacing: 1px;
+  margin-bottom: 3px;
+}
+.roadmap-date {
+  font-size: 8.5pt;
+  font-weight: 700;
+  color: #3d2008;
+  margin-bottom: 5px;
+}
+.roadmap-desc { font-size: 8.5pt; color: #5a4030; line-height: 1.5; }
+
+/* ══════════════ 7. 수익 모델 ══════════════ */
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.plan-card {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1.5px solid #d4b896;
+  box-shadow: 0 2px 10px rgba(61,32,8,0.07);
+}
+.plan-head {
+  padding: 13px 16px;
+  font-weight: 700;
+  font-size: 11pt;
+  color: #fff;
+  text-align: center;
+}
+.plan-free   .plan-head { background: linear-gradient(135deg, #5a3010, #8b5020); }
+.plan-pro    .plan-head { background: linear-gradient(135deg, #2a1004, #5a3010); }
+.plan-future .plan-head { background: linear-gradient(135deg, #6b3d18, #a06030); }
+.plan-body { padding: 14px; background: #fdf5ec; }
+.plan-tag {
+  font-size: 8pt;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  color: #8a6a4a;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #d4b896;
+}
+.plan-card ul { padding-left: 14px; font-size: 9.5pt; color: #444; }
+.plan-card li { margin: 5px 0; }
+
+/* ══════════════ 8. 고객 혜택 ══════════════ */
+.benefit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.benefit-card.full { grid-column: 1 / -1; }
+.benefit-card {
+  border-radius: 10px;
+  padding: 18px;
+  border: 1.5px solid #d4b896;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.ben-icon { font-size: 22pt; flex-shrink: 0; line-height: 1.1; }
+.ben-title { font-size: 11pt; font-weight: 700; margin-bottom: 5px; color: #2a1a0a; }
+.ben-desc { font-size: 9pt; color: #5a4030; line-height: 1.6; }
+.bg-q1 { background: linear-gradient(135deg, #fdf0e0, #f7e8d0); }
+.bg-q2 { background: linear-gradient(135deg, #f7ede0, #f0e0cc); }
+.bg-q3 { background: linear-gradient(135deg, #faeada, #f2dfc8); }
+.bg-q4 { background: linear-gradient(135deg, #f5e8d8, #eedaca); }
+
+/* ══════════════ WORKAROUNDS 섹션 ══════════════ */
+.wa-insight {
+  background: linear-gradient(135deg, #3d2008, #6b3d18);
+  color: #f0dcc0;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 9.5pt;
+  line-height: 1.7;
+  margin-bottom: 14px;
+  border-left: 4px solid #c4922a;
+}
+.wa-insight strong { color: #c4922a; }
+
+.wa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.wa-card {
+  background: #fdf5ec;
+  border: 1.5px solid #d4b896;
+  border-radius: 8px;
+  padding: 13px 15px;
+  position: relative;
+  overflow: hidden;
+}
+.wa-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: #c4922a;
+}
+.wa-card.full { grid-column: 1 / -1; }
+
+.wa-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.wa-prob-chip {
+  background: #3d2008;
+  color: #c4922a;
+  font-size: 7pt;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 10px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.wa-card-title {
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: #2a1a0a;
+}
+.wa-method-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.wa-method-item {
+  background: rgba(196,146,42,0.12);
+  border: 1px solid rgba(196,146,42,0.3);
+  color: #6b3d18;
+  font-size: 7.5pt;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 2px 9px;
+}
+.wa-quote {
+  font-style: italic;
+  color: #5a3a1a;
+  font-size: 8.5pt;
+  border-left: 3px solid #c4922a;
+  padding-left: 8px;
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+.wa-limit {
+  font-size: 8pt;
+  color: #8b3010;
+  font-weight: 600;
+}
+.wa-limit::before { content: '⚠ '; }
+
+.wa-pattern {
+  background: linear-gradient(135deg, #2e1404, #4a2810);
+  border-radius: 8px;
+  padding: 16px 18px;
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  border-left: 4px solid #c4922a;
+}
+.wa-pattern-item { border-right: 1px solid rgba(255,255,255,0.06); padding-right: 14px; }
+.wa-pattern-item:last-child { border-right: none; padding-right: 0; }
+.wa-pattern-num {
+  font-size: 7pt;
+  font-weight: 800;
+  color: #c4922a;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.wa-pattern-title {
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 5px;
+  line-height: 1.3;
+}
+.wa-pattern-desc {
+  font-size: 8pt;
+  color: #c4a882;
+  line-height: 1.55;
+}
+
+/* ══════════════ 인쇄 ══════════════ */
+@media print {
+  body { font-size: 9.5pt; }
+  .page { padding: 20px 36px 22px; }
+  .page-break { page-break-before: always; }
+  @page { margin: 10mm; size: A4; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ 표지 ══════════════════ -->
+<div class="cover">
+  <div class="cover-ring1"></div>
+  <div class="cover-ring2"></div>
+  <div class="cover-ring3"></div>
+  <div class="cover-accent-line"></div>
+
+  <div class="cover-body">
+    <div class="cover-badge">KDT AI/LLM Portfolio · 2026</div>
+    <h1>AI 인테리어<br><span class="accent">추천 서비스</span></h1>
+    <div class="cover-slogan">"내 도면을 올리면 AI가 우리 집 인테리어를 골라드립니다"</div>
+  </div>
+
+  <div class="cover-kpi-bar">
+    <div class="kpi-item">
+      <div class="kpi-num">628만</div>
+      <div class="kpi-label">연간 국내 이사 인구<br>통계청, 2024</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-num">약 50조원</div>
+      <div class="kpi-label">국내 인테리어 시장 규모<br>한국건설산업연구원</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-num">CAGR 28.5%</div>
+      <div class="kpi-label">AI 인테리어 시장 성장률<br>글로벌 기준, Mordor Intelligence</div>
+    </div>
+  </div>
+</div>
+<div class="cover-meta">
+  <span>제작일: 2026-04-27</span>
+  <span>제작: KDT AI/LLM 과정 개인 포트폴리오</span>
+  <span>문의: shark1011.sk@gmail.com</span>
+</div>
+
+<!-- ══════════════════ 서비스 개요 ══════════════════ -->
+<div class="page">
+  <div class="section-header">
+    <span class="section-num">OVERVIEW</span>
+    <span class="section-title">서비스 개요</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="def-box">
+        <strong>서비스 핵심 가치</strong><br>
+        내 도면 이미지를 올리면 <strong>Claude Vision</strong>이 공간을 분석하고,
+        2026 트렌드 기반 인테리어 스타일 <strong>3안</strong>을
+        배치도 · 미리보기 이미지 · 실구매 상품과 함께 제안해,
+        생애 첫 집 인테리어를 스트레스 없이 비교하고 선택할 수 있게 해주는 AI 추천 웹 서비스.
+      </div>
+      <div class="mv-stack">
+        <div class="mv-card">
+          <div class="mv-head">🎯 미션</div>
+          <div class="mv-body">인테리어 결정 앞에서 누구나 <strong>확신 있게, 예산 안에서, 내 공간에 맞게</strong> 선택할 수 있도록, AI 기술로 전문가 없이도 근거 있는 결정을 돕는다.</div>
+        </div>
+        <div class="mv-card">
+          <div class="mv-head v2">🌏 비전</div>
+          <div class="mv-body">"남의 집 구경"을 넘어 "내 도면 기반 개인화 추천"으로, 인테리어 의사결정 경험을 새롭게 정의한다.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="market-chart">
+      <div class="chart-title">📊 시장 규모 &amp; 기회 분석</div>
+
+      <div class="mbar-group">
+        <div class="mbar-label">연간 국내 이사 인구 (통계청, 2024)</div>
+        <div class="mbar-track">
+          <div class="mbar-fill" style="width:63%; background:linear-gradient(90deg,#3d2008,#8b5030);">약 628만 명</div>
+        </div>
+      </div>
+      <div class="mbar-group">
+        <div class="mbar-label">국내 인테리어 시장 규모 (한국건설산업연구원)</div>
+        <div class="mbar-track">
+          <div class="mbar-fill" style="width:75%; background:linear-gradient(90deg,#6b3d18,#a87040);">약 50조원</div>
+        </div>
+        <div class="mbar-note">이사·리모델링 수요가 꾸준히 유지되는 대형 시장 → AI 기반 결정 지원 서비스 기회</div>
+      </div>
+      <div class="mbar-group">
+        <div class="mbar-label">AI 인테리어 시장 성장률 (글로벌, Mordor Intelligence 2024)</div>
+        <div class="mbar-track">
+          <div class="mbar-fill" style="width:65%; background:linear-gradient(90deg,#5a3010,#9a6030);">CAGR 28.5%↑</div>
+        </div>
+      </div>
+
+      <div class="donut-wrap">
+        <div class="donut"></div>
+        <div class="donut-legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#8b3010;"></div>
+            <span><strong>30%</strong> 전문 인테리어 업체 이용</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#d4b896;"></div>
+            <span><strong>70%</strong> 혼자 결정 — 우리 서비스 타깃 (추정치)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<hr class="divider">
+
+<!-- ══════════════════ 문제 정의 ══════════════════ -->
+<div class="page">
+  <div class="section-header">
+    <span class="section-num">PROBLEM</span>
+    <span class="section-title">문제 정의 (Pain Point)</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="prob-insight">
+    인테리어 정보는 넘쳐나지만, 오늘의집·유튜브·블로그의 모든 정보는 <strong>'다른 사람의 공간'</strong>을 기준으로 만들어진다.<br>
+    내 도면·내 예산·내 취향의 교집합을 찾아주는 것이 없다.
+  </div>
+
+  <div class="prob-grid">
+    <div class="prob-card">
+      <div class="prob-num">PROBLEM 01</div>
+      <div class="prob-title">선택지 과잉 → 결정 피로</div>
+      <div class="prob-desc">가구·가전·자재의 선택지가 너무 많아 비교 기준을 스스로 세울 수 없다. FOMO와 후회 비용 때문에 결정 자체를 미루게 된다.</div>
+    </div>
+    <div class="prob-card">
+      <div class="prob-num">PROBLEM 02</div>
+      <div class="prob-title">내 공간 시각화 불가</div>
+      <div class="prob-desc">오늘의집·인스타 사진이 예뻐도 "내 집에 어떻게 적용할지"를 알 수 없다. 설치 후에야 결과를 볼 수 있는 미리보기의 부재.</div>
+    </div>
+    <div class="prob-card">
+      <div class="prob-num">PROBLEM 03</div>
+      <div class="prob-title">경험 축적 불가 구조</div>
+      <div class="prob-desc">인테리어는 일생에 1~2번뿐이라 배울 기회가 없다. "반평생 전세만 살아봐서 처음 해보는 건데"처럼, 시스템 자체가 경험 축적을 허용하지 않는 구조적 장벽이다.</div>
+    </div>
+    <div class="prob-card">
+      <div class="prob-num">PROBLEM 04</div>
+      <div class="prob-title">비가역 고비용 + 예산 불확실성</div>
+      <div class="prob-desc">수백~수천만 원, 한번 설치하면 바꿀 수 없다. 업체마다 다른 견적 기준, breakdown 없는 총액 견적으로 '정확한 예산'조차 파악이 불가능하다. 정보 비대칭 속 결정 강요 → 통제감 상실.</div>
+    </div>
+    <div class="prob-card full">
+      <div class="prob-num">PROBLEM 05</div>
+      <div class="prob-title">SNS 기대치 → 내 집과의 괴리감</div>
+      <div class="prob-desc">오늘의집·인스타의 '완성된 집' 이미지가 기준점이 된다. 하지만 그 이미지는 전문 스타일링·특정 조명·과장된 연출의 결과다. 똑같이 따라 해도 "왜 내 집은 이렇게 차이가 나지?" — SNS가 만든 비현실적 기대치가 결정을 더 어렵게 만들고, 구매 후 박탈감으로 이어진다.</div>
+    </div>
+  </div>
+</div>
+<hr class="divider">
+
+<!-- ══════════════════ 현재 사용자 대처 방법 ══════════════════ -->
+<div class="page-break"></div>
+<div class="page">
+  <div class="section-header">
+    <span class="section-num">WORKAROUNDS</span>
+    <span class="section-title">현재 사용자들의 대처 방법</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="wa-insight">
+    사용자들은 이미 5가지 문제를 풀기 위해 <strong>핀터레스트·엑셀·손그림·카카오톡</strong> 등 비공식 방법을 동원하고 있다.<br>
+    그러나 모든 방법이 같은 결론에 도달한다 — <strong>파편화·맥락 불일치·정보 휘발</strong>. 시작은 있지만 결정으로 이어지지 않는다.
+  </div>
+
+  <div class="wa-grid">
+
+    <div class="wa-card">
+      <div class="wa-card-head">
+        <span class="wa-prob-chip">P01</span>
+        <span class="wa-card-title">선택지 과잉 → 결정 피로</span>
+      </div>
+      <div class="wa-method-list">
+        <span class="wa-method-item">📌 핀터레스트 무드보드</span>
+        <span class="wa-method-item">💬 카카오톡 단톡 투표</span>
+        <span class="wa-method-item">🙋 커뮤니티 봐주세요</span>
+      </div>
+      <div class="wa-quote">"300장 저장했는데 막상 무슨 스타일인지 모르겠다"</div>
+      <div class="wa-limit">스타일 수렴 안 됨 + 비동기 의견은 결정 속도만 늦춤</div>
+    </div>
+
+    <div class="wa-card">
+      <div class="wa-card-head">
+        <span class="wa-prob-chip">P02</span>
+        <span class="wa-card-title">내 공간 시각화 불가</span>
+      </div>
+      <div class="wa-method-list">
+        <span class="wa-method-item">✏️ 줄자+모눈종이 손그림</span>
+        <span class="wa-method-item">🪑 이케아 연필·방안지</span>
+        <span class="wa-method-item">📱 무료 평면도 앱</span>
+      </div>
+      <div class="wa-quote">"문 열리는 방향 깜빡해서 소파 놓고 문이 안 열림"</div>
+      <div class="wa-limit">2D 한계 + 국내 가구(한샘·일룸) DB 없음</div>
+    </div>
+
+    <div class="wa-card">
+      <div class="wa-card-head">
+        <span class="wa-prob-chip">P03</span>
+        <span class="wa-card-title">경험 축적 불가 구조</span>
+      </div>
+      <div class="wa-method-list">
+        <span class="wa-method-item">📖 블로그 200개 독학</span>
+        <span class="wa-method-item">▶ 유튜브 시청</span>
+        <span class="wa-method-item">🤝 지인 찬스</span>
+      </div>
+      <div class="wa-quote">"내 상황에 딱 맞는 글이 없더라"</div>
+      <div class="wa-limit">정보는 쌓이지만 의사결정으로 연결 안 됨</div>
+    </div>
+
+    <div class="wa-card">
+      <div class="wa-card-head">
+        <span class="wa-prob-chip">P04</span>
+        <span class="wa-card-title">비가역 고비용 + 예산 불확실성</span>
+      </div>
+      <div class="wa-method-list">
+        <span class="wa-method-item">📊 엑셀 견적 비교표</span>
+        <span class="wa-method-item">🏠 입주민 밴드 공유</span>
+        <span class="wa-method-item">🔢 평당 단가 역산</span>
+      </div>
+      <div class="wa-quote">"항목 이름이 다 달라서 비교 자체가 불가능했음"</div>
+      <div class="wa-limit">견적 비표준화 + 적정가 판단 기준 없음</div>
+    </div>
+
+    <div class="wa-card full">
+      <div class="wa-card-head">
+        <span class="wa-prob-chip">P05</span>
+        <span class="wa-card-title">SNS 기대치 → 내 집과의 괴리감</span>
+      </div>
+      <div class="wa-method-list">
+        <span class="wa-method-item">#️⃣ #저예산 해시태그 필터링</span>
+        <span class="wa-method-item">🖼 Before·After 사진 수집</span>
+        <span class="wa-method-item">🔆 조명·커튼만 교체로 타협</span>
+        <span class="wa-method-item">📽 광각 렌즈 효과 학습</span>
+      </div>
+      <div class="wa-quote">"오늘의집은 비현실적인 거 알면서도 계속 보게 됨. 그러다 내 집 보면 우울해짐"</div>
+      <div class="wa-limit">SNS 구조상 필터링 불가. 결국 "완벽한 인테리어 포기 → 소품 교체"로 타협</div>
+    </div>
+
+  </div>
+
+  <div class="wa-pattern">
+    <div class="wa-pattern-item">
+      <div class="wa-pattern-num">INSIGHT 01</div>
+      <div class="wa-pattern-title">결정의 사회화</div>
+      <div class="wa-pattern-desc">혼자 결정하지 못하고 커뮤니티·가족·지인에게 판단을 위임한다. "틀리지 않았다"는 검증 욕구가 핵심 — AI 근거 추천이 이를 대체할 수 있다.</div>
+    </div>
+    <div class="wa-pattern-item">
+      <div class="wa-pattern-num">INSIGHT 02</div>
+      <div class="wa-pattern-title">정보 과잉 → 지인 추천 회귀</div>
+      <div class="wa-pattern-desc">블로그·유튜브·카페를 다 거쳐도 결국 지인 추천 업체로 계약한다. 정보 탐색이 의사결정으로 연결되지 않는 구조적 단절이 존재한다.</div>
+    </div>
+    <div class="wa-pattern-item">
+      <div class="wa-pattern-num">INSIGHT 03</div>
+      <div class="wa-pattern-title">이케아 = 유일한 프로세스</div>
+      <div class="wa-pattern-desc">이케아 연필·방안지·치수표가 "어떻게 시작해야 하는가"를 알려주는 유일한 오프라인 채널로 인식된다. 사용자는 제품이 아닌 접근법이 필요하다.</div>
+    </div>
+  </div>
+</div>
+<hr class="divider">
+
+<!-- ══════════════════ 해결 방법 + AI 플로우 ══════════════════ -->
+<div class="page-break"></div>
+<div class="page">
+  <div class="section-header">
+    <span class="section-num">SOLUTION</span>
+    <span class="section-title">해결 방법 — AI 처리 파이프라인</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="flow-diagram">
+    <div class="flow-step">
+      <div class="flow-icon-wrap">🏠</div>
+      <div class="flow-step-num">STEP 01</div>
+      <div class="flow-step-name">도면 업로드</div>
+      <div class="flow-step-detail">JPG / PNG<br>최대 5 MB</div>
+      <div class="flow-tech">User Input</div>
+      <div class="flow-arrow">▶</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-icon-wrap">🔍</div>
+      <div class="flow-step-num">STEP 02</div>
+      <div class="flow-step-name">Vision 분석</div>
+      <div class="flow-step-detail">방·문·창문<br>자동 추출</div>
+      <div class="flow-tech">Claude Vision</div>
+      <div class="flow-arrow">▶</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-icon-wrap">🌐</div>
+      <div class="flow-step-num">STEP 03</div>
+      <div class="flow-step-name">트렌드 검색</div>
+      <div class="flow-step-detail">2026 인테리어<br>실시간 탐색</div>
+      <div class="flow-tech">Web Search</div>
+      <div class="flow-arrow">▶</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-icon-wrap">✨</div>
+      <div class="flow-step-num">STEP 04</div>
+      <div class="flow-step-name">스타일 3안 생성</div>
+      <div class="flow-step-detail">배치도 + 이미지<br>30~60초 이내</div>
+      <div class="flow-tech">Claude + Imagen</div>
+      <div class="flow-arrow">▶</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-icon-wrap">🛒</div>
+      <div class="flow-step-num">STEP 05</div>
+      <div class="flow-step-name">상품 연결</div>
+      <div class="flow-step-detail">네이버·한샘·IKEA<br>실시간 검색</div>
+      <div class="flow-tech">실구매 링크</div>
+    </div>
+  </div>
+
+  <div class="solution-branch">
+    <div class="branch-badge">🌟 신규 모드</div>
+    <div class="branch-content">
+      <div class="branch-title">SNS 영감 번역 모드 — "내 도면으로 번역하기"</div>
+      <div class="branch-flow">도면 + SNS 영감 이미지 → Vision×2(공간 분석 + 스타일 추출 + 벽 분류) → 호환성 매핑 → 가능·불가·대안 분류 + Imagen 렌더링</div>
+      <div class="branch-note">영감 이미지를 첨부하면 Web Search 트렌드 탐색 단계가 "영감 분석 + 내 도면 호환성 매핑"으로 대체됩니다. 벽 두께 기반으로 확장 가능 영역(칸막이벽)과 불가 영역(내력벽)을 자동 분류합니다.</div>
+    </div>
+  </div>
+
+  <table class="compare">
+    <tr>
+      <th>비교 항목</th>
+      <th class="other">오늘의집 / Houzz</th>
+      <th class="ours">우리 서비스</th>
+    </tr>
+    <tr>
+      <td>내 도면 기반 개인화</td>
+      <td class="cross">✕ 남의 집 사진 구경</td>
+      <td class="check">✓ 내 도면 → 내 공간 배치도</td>
+    </tr>
+    <tr>
+      <td>실시간 트렌드 추천</td>
+      <td class="cross">✕ 사전 업로드 콘텐츠</td>
+      <td class="check">✓ Web Search 기반 2026 트렌드 실시간</td>
+    </tr>
+    <tr>
+      <td>실구매 가능 상품 연결</td>
+      <td class="check">✓ 자사 커머스 (오늘의집 스토어)</td>
+      <td class="check">✓ 외부 실시간 검색 연동 (네이버쇼핑·한샘·일룸·IKEA)</td>
+    </tr>
+    <tr>
+      <td>AI 배치도 자동 생성</td>
+      <td class="cross">✕ 없음</td>
+      <td class="check">✓ SVG 2D 탑뷰 배치도 자동 생성</td>
+    </tr>
+    <tr>
+      <td>즉시 재추천·정밀화</td>
+      <td class="cross">✕ 없음</td>
+      <td class="check">✓ 무제한 재추천 + 예산·취향 정밀화</td>
+    </tr>
+    <tr>
+      <td>견적 투명화·예산 추정</td>
+      <td class="cross">✕ 없음</td>
+      <td class="check">✓ 공정별 표준 단가 AI 추정 + 우선순위 조언</td>
+    </tr>
+    <tr>
+      <td>SNS 스타일 현실화</td>
+      <td class="cross">✕ 없음</td>
+      <td class="check">✓ SNS 영감 이미지 첨부 → 가능/불가/대안 자동 분류 + Imagen 렌더링</td>
+    </tr>
+    <tr>
+      <td>벽 구조 분석·확장 가능성</td>
+      <td class="cross">✕ 없음</td>
+      <td class="check">✓ 벽 두께 기반 내력벽/칸막이벽 분류 + 확장 후보 영역 표시</td>
+    </tr>
+  </table>
+</div>
+<hr class="divider">
+
+<!-- ══════════════════ 주요 기능 (3-column) ══════════════════ -->
+<div class="page">
+  <div class="section-header">
+    <span class="section-num">FEATURES</span>
+    <span class="section-title">주요 기능 상세</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="feature-grid">
+    <div class="feature-card fc1">
+      <div class="feature-card-head">
+        <span class="feature-icon">🏠</span>
+        <span class="feature-card-title">도면 이미지 업로드</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="phase-badge phase-mvp">MVP</div>
+        분양 카탈로그·네이버 부동산 캡처 이미지를 그대로 올리면 됩니다.
+        JPG/PNG 5 MB 이내, 25~50평형(공급면적 기준) 지원.
+        <div class="feature-tag">User Input Layer</div>
+      </div>
+    </div>
+    <div class="feature-card fc2">
+      <div class="feature-card-head">
+        <span class="feature-icon">🔍</span>
+        <span class="feature-card-title">Claude Vision 공간 분석</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="phase-badge phase-mvp">MVP</div>
+        AI가 방 개수·용도·비율·문·창문을 자동 추출해 도면 위에 오버레이로 표시합니다.
+        인식 결과를 직접 확인·수정 가능. <strong>표준 분양 카탈로그 기준 목표 정확도 80%+</strong>
+        <div class="feature-tag">Claude Vision API</div>
+      </div>
+    </div>
+    <div class="feature-card fc3">
+      <div class="feature-card-head">
+        <span class="feature-icon">✨</span>
+        <span class="feature-card-title">트렌드 기반 스타일 3안</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="phase-badge phase-mvp">MVP</div>
+        Claude Web Search로 최신 트렌드를 실시간 검색한 뒤, 배치도·AI 미리보기·추천 근거를
+        3가지 안으로 병렬 제시합니다.
+        <div class="feature-tag">Web Search + LLM</div>
+      </div>
+    </div>
+    <div class="feature-card fc4">
+      <div class="feature-card-head">
+        <span class="feature-icon">🛒</span>
+        <span class="feature-card-title">실구매 상품 실시간 추천</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="phase-badge phase-mvp">MVP</div>
+        네이버쇼핑 통합 API로 한샘·일룸·IKEA 포함 상품을 실시간 검색해 각 스타일에 맞는 상품을 제안합니다.
+        상품 DB 없이 항상 최신 상품 기반, 클릭 시 판매처에서 실시간 가격·재고 확인.
+        <div class="feature-tag">실시간 검색 연동</div>
+      </div>
+    </div>
+    <div class="feature-card fc5">
+      <div class="feature-card-head">
+        <span class="feature-icon">🔄</span>
+        <span class="feature-card-title">무제한 재추천 + 정밀화</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="phase-badge phase-p2">Phase 2</div>
+        마음에 안 들면 버튼 하나로 다른 3안 재생성. 예산·가족형태·취향 입력으로
+        더 맞춤화된 추천 수신. 👍/👎 피드백 학습.
+        <div class="feature-tag">피드백 루프</div>
+      </div>
+    </div>
+    <div class="feature-card fc6">
+      <div class="feature-card-head">
+        <span class="feature-icon">📄</span>
+        <span class="feature-card-title">공유 링크 &amp; PDF 저장</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="phase-badge phase-mvp">MVP</div>
+        추천 결과를 링크로 공유해 배우자·가족과 함께 논의하거나,
+        PDF로 저장해 인테리어 업체 상담 시 활용할 수 있습니다.
+        <div class="feature-tag">Export 기능</div>
+      </div>
+    </div>
+    <div class="feature-card fc7">
+      <div class="feature-card-head">
+        <span class="feature-icon">💡</span>
+        <span class="feature-card-title">이유 있는 큐레이션</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="phase-badge phase-mvp">MVP</div>
+        각 스타일 안마다 "왜 이 공간에 맞는가" 3줄 근거를 제시합니다.
+        "너무 어두워서·가격이 높아서" 등 거절 이유를 선택하면
+        다음 추천이 자동 보정됩니다.
+        <div class="feature-tag">Feedback Loop</div>
+      </div>
+    </div>
+    <div class="feature-card fc8">
+      <div class="feature-card-head">
+        <span class="feature-icon">💰</span>
+        <span class="feature-card-title">공정별 예산 사전 추정</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="phase-badge phase-p2">Phase 2</div>
+        평수·스타일 선택 시 도배·바닥·주방·욕실 공정별 참고 단가
+        기반으로 예산 범위를 사전 제시합니다. "이 예산이면 어디에
+        집중해야 하는가" 우선순위 조언 포함.
+        <div style="font-size:7.5pt; color:#888; margin-top:4px;">※ 지역·시공 범위에 따라 ±30% 오차 발생 가능</div>
+        <div class="feature-tag">AI 예산 플래너</div>
+      </div>
+    </div>
+    <div class="feature-card fc9">
+      <div class="feature-card-head">
+        <span class="feature-icon">📋</span>
+        <span class="feature-card-title">내 인테리어 이력서</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="phase-badge phase-p3">Phase 3</div>
+        이번 선택 스타일·거절 이유·구매 제품을 자동 저장합니다.
+        다음 이사 때 불러오면 AI가 이전 선호를 기반으로 대화를 시작해
+        일생 1~2번 경험을 다음을 위한 자산으로 남깁니다. 회원가입 시 이용 가능.
+        <div class="feature-tag">장기 개인화</div>
+      </div>
+    </div>
+    <div class="feature-card fc10">
+      <div class="feature-card-head">
+        <span class="feature-icon">📱</span>
+        <span class="feature-card-title">내 도면으로 번역하기 (SNS to My Room)</span>
+      </div>
+      <div class="feature-card-body">
+        <div class="phase-badge phase-p3">Phase 3</div>
+        오늘의집·인스타 영감 이미지를 올리면, AI가 내 도면·예산 조건에서
+        <strong>가능·불가·대안</strong>을 자동 분류합니다.
+        벽 두께 패턴 분석으로 <strong>확장 가능 영역(칸막이벽)·불가 영역(내력벽)</strong>까지 구분하고,
+        Gemini Imagen으로 "내 집 버전" 렌더링을 생성합니다.
+        "조명·커튼만 교체" 타협 없이 SNS 영감을 내 공간에 맞게 현실화합니다.
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+          <div class="feature-tag">SNS to My Room</div>
+          <div class="feature-tag">벽 구조 분석</div>
+          <div class="feature-tag">Imagen 렌더링</div>
+        </div>
+        <div style="font-size:7.5pt; color:#888; margin-top:6px; font-style:italic;">
+          ※ 벽 분류는 도면 두께 기반 추정(신뢰도 70~85%). 실제 시공 전 관리사무소·구조 기술사 확인 필수.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<hr class="divider">
+
+<!-- ══════════════════ 성과 지표 &amp; 기술 스택 ══════════════════ -->
+<div class="page-break"></div>
+<div class="page">
+  <div class="section-header">
+    <span class="section-num">METRICS</span>
+    <span class="section-title">성과 지표 &amp; 기술 스택</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="metrics-layout">
+    <div>
+      <div class="metric-grid">
+        <div class="metric-card m1">
+          <div class="big-num">80%<span style="font-size:12pt">+</span></div>
+          <div class="big-label">도면 인식 정확도 목표<br>(Vision 프롬프트 R&amp;D)</div>
+        </div>
+        <div class="metric-card m2">
+          <div class="big-num">30<span style="font-size:12pt">초</span></div>
+          <div class="big-label">스타일 3안 생성<br>목표 응답 시간</div>
+        </div>
+        <div class="metric-card m3">
+          <div class="big-num">10<span style="font-size:12pt">명</span></div>
+          <div class="big-label">지인 실사용 피드백<br>1차 검증 목표</div>
+        </div>
+        <div class="metric-card m4">
+          <div class="big-num">3<span style="font-size:12pt">종</span></div>
+          <div class="big-label">평형대 샘플 도면<br>(25 / 35 / 45평)</div>
+        </div>
+      </div>
+
+      <div class="tech-stack">
+        <div class="tech-stack-title">⚙ 기술 스택</div>
+        <div class="tech-layers">
+          <div>
+            <div class="tech-layer-name">FRONTEND</div>
+            <div class="tech-item">React</div>
+            <div class="tech-item">Tailwind CSS</div>
+          </div>
+          <div>
+            <div class="tech-layer-name">AI VISION</div>
+            <div class="tech-item hl">Claude Vision</div>
+            <div class="tech-item hl">Web Search</div>
+          </div>
+          <div>
+            <div class="tech-layer-name">GENERATION</div>
+            <div class="tech-item hl">Gemini Imagen</div>
+            <div class="tech-item">SVG 배치도</div>
+          </div>
+          <div>
+            <div class="tech-layer-name">BACKEND</div>
+            <div class="tech-item">FastAPI</div>
+            <div class="tech-item">PostgreSQL</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="accuracy-section">
+      <div class="acc-title">📊 Vision 프롬프트 R&amp;D — 버전별 도면 인식 정확도</div>
+      <div class="bar-row">
+        <span style="min-width:110px; font-size:9pt;">v1 기본 프롬프트</span>
+        <div class="bar-bg">
+          <div class="bar-fill" style="width:50%; background:linear-gradient(90deg,#c0444a,#d06050);">~50%</div>
+        </div>
+        <span class="bar-pct" style="color:#c0444a;">~50%</span>
+      </div>
+      <div class="bar-row">
+        <span style="min-width:110px; font-size:9pt;">v2 Few-shot 추가</span>
+        <div class="bar-bg">
+          <div class="bar-fill" style="width:65%; background:linear-gradient(90deg,#d08020,#e09030);">~65%</div>
+        </div>
+        <span class="bar-pct" style="color:#d08020;">~65%</span>
+      </div>
+      <div class="bar-row">
+        <span style="min-width:110px; font-size:9pt;">v3 CoT + 도메인 사전</span>
+        <div class="bar-bg">
+          <div class="bar-fill" style="width:80%; background:linear-gradient(90deg,#3d6b3d,#5a8a5a);">80%+</div>
+        </div>
+        <span class="bar-pct" style="color:#3d6b3d;">80%+</span>
+      </div>
+
+      <div style="margin-top:16px; padding-top:12px; border-top:1px solid #e8d4b8;">
+        <div class="acc-title" style="margin-bottom:10px;">🗓 개발 로드맵</div>
+        <div class="roadmap">
+          <div class="roadmap-item">
+            <div class="roadmap-phase">PHASE 1</div>
+            <div class="roadmap-date">2026.04 — 현재</div>
+            <div class="roadmap-desc">MVP 개발<br>도면 분석 + 3안 추천</div>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-phase">PHASE 2</div>
+            <div class="roadmap-date">2026.05</div>
+            <div class="roadmap-desc">지인 10명 베타 테스트<br>피드백 수집</div>
+          </div>
+          <div class="roadmap-item">
+            <div class="roadmap-phase">PHASE 3</div>
+            <div class="roadmap-date">2026.06~</div>
+            <div class="roadmap-desc">Pro 플랜 출시<br>수익화 검토</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:8pt; color:#888; margin-top:12px; line-height:1.6;">
+        * 샘플 도면 10~15장 + 정답 JSON Evaluation Set 기준<br>
+        VisionExperiment DB 기록 → KDT 발표 핵심 근거
+      </div>
+    </div>
+  </div>
+</div>
+<hr class="divider">
+
+<!-- ══════════════════ 수익 모델 ══════════════════ -->
+<div class="page">
+  <div class="section-header">
+    <span class="section-num">REVENUE</span>
+    <span class="section-title">수익 모델 / 가격 정책</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="plan-grid">
+    <div class="plan-card plan-free">
+      <div class="plan-head">🆓 Free</div>
+      <div class="plan-body">
+        <div class="plan-tag">현재 · MVP 단계</div>
+        <ul>
+          <li>도면 분석 무제한</li>
+          <li>스타일 3안 추천</li>
+          <li>재추천 일 10회</li>
+          <li>공유 링크 / PDF 저장</li>
+          <li>구글 계정 로그인</li>
+        </ul>
+      </div>
+    </div>
+    <div class="plan-card plan-pro">
+      <div class="plan-head">⭐ Pro (검토 중)</div>
+      <div class="plan-body">
+        <div class="plan-tag">v2 스프린트 이후</div>
+        <ul>
+          <li>재추천 무제한</li>
+          <li>정밀화 저장 이력</li>
+          <li>아이소메트릭 배치도</li>
+          <li>드래그 가전 배치</li>
+          <li>월 ₩9,900 (예상)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="plan-card plan-future">
+      <div class="plan-head">🚀 향후 수익화</div>
+      <div class="plan-body">
+        <div class="plan-tag">지인 10명 피드백 이후</div>
+        <ul>
+          <li>어필리에이트 수수료</li>
+          <li>인테리어 광고 지면</li>
+          <li>기업 B2B 화이트라벨</li>
+          <li>창업 검토 기준: 반응 ↑</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+<hr class="divider">
+
+<!-- ══════════════════ 고객 혜택 ══════════════════ -->
+<div class="page">
+  <div class="section-header">
+    <span class="section-num">BENEFITS</span>
+    <span class="section-title">고객 혜택 및 기대 효과</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="benefit-grid">
+    <div class="benefit-card bg-q1">
+      <div class="ben-icon">⏱️</div>
+      <div>
+        <div class="ben-title">의사결정 시간 단축</div>
+        <div class="ben-desc">도면 업로드 후 AI 처리 완료까지 <strong>30~60초</strong>, 3가지 시각화 안을 동시에 비교할 수 있습니다. 수일~수주 걸리던 스타일 탐색 시간을 대폭 줄입니다. 재추천과 정밀화로 원하는 결과를 빠르게 수렴합니다.</div>
+      </div>
+    </div>
+    <div class="benefit-card bg-q2">
+      <div class="ben-icon">💰</div>
+      <div>
+        <div class="ben-title">예산 불확실성 해소</div>
+        <div class="ben-desc">공정별 참고 단가 기반으로 예산 범위를 사전에 파악합니다. 업체마다 다른 견적 기준에 흔들리지 않고, <strong>"이 금액이 적정한가"를 근거 있게 판단</strong>할 수 있습니다. ※ 실제 공사비는 지역·범위에 따라 ±30% 오차 발생 가능.</div>
+      </div>
+    </div>
+    <div class="benefit-card bg-q3">
+      <div class="ben-icon">😌</div>
+      <div>
+        <div class="ben-title">인테리어 스트레스 감소</div>
+        <div class="ben-desc">"이게 맞는 선택일까?"라는 불안을 AI 근거와 비교 3안이 해소합니다. 배우자와 공유 링크로 함께 논의하고, PDF로 저장해 차분히 검토할 수 있습니다.</div>
+      </div>
+    </div>
+    <div class="benefit-card bg-q4">
+      <div class="ben-icon">🏡</div>
+      <div>
+        <div class="ben-title">내 공간에 대한 통제감 회복</div>
+        <div class="ben-desc">"내 도면 기반" 추천이라는 사실 하나가 결정의 주도권을 돌려줍니다. 전문가 없이도 <strong>"이 선택이 맞다"는 근거</strong>를 손에 쥐고 결정할 수 있습니다.</div>
+      </div>
+    </div>
+    <div class="benefit-card full" style="background: linear-gradient(135deg, #f2e4d4, #ebd8c0);">
+      <div class="ben-icon">📱</div>
+      <div>
+        <div class="ben-title">SNS 기대치와 내 집 현실의 간극 해소</div>
+        <div class="ben-desc"><strong>"내 도면으로 번역하기"</strong> 기능으로 오늘의집·인스타 영감 이미지를 가능·불가·대안으로 자동 분류하고, Gemini Imagen으로 내 집 버전을 미리 확인합니다. 벽 구조 분석으로 확장 가능 영역까지 파악해 <strong>"포기 → 조명·커튼만 교체"</strong> 타협 경로를 끊고, SNS 영감을 내 공간 조건에 맞게 현실화합니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:18px; padding:16px 22px; background:linear-gradient(135deg,#1a0800,#3d2008); border-radius:10px; color:#d4b896; text-align:center; line-height:1.85; font-size:9.5pt;">
+    <strong style="color:#c4922a; font-size:11pt;">KDT AI/LLM 과정 핵심 포트폴리오</strong><br>
+    Claude Vision · Web Search Tool Use · Gemini Imagen — 풀스택 AI 파이프라인 통합 구현<br>
+    <span style="color:#a08060; font-size:9pt;">프롬프트 엔지니어링 R&amp;D 기록 (VisionExperiment DB) →
+    <em>"도면 불규칙성을 Vision 프롬프트로 극복한 과정"</em></span>
+  </div>
+</div>
+
+</body>
+</html>

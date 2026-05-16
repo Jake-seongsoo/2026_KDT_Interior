@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm test *)",
+      "Bash(.\\\\.venv\\\\Scripts\\\\python.exe -m pytest tests/services/test_naver_service.py -v)",
+      "Bash(python -m pytest tests/services/test_naver_service.py -v)",
+      "Bash(npx tsc *)",
+      "Bash(npx vitest *)",
+      "Bash(python -m pytest tests/services/test_claude_service.py -v)",
+      "Bash(pip install *)",
+      "Bash(.venv\\\\Scripts\\\\python.exe -m pytest tests/services/test_claude_service.py -v)",
+      "PowerShell(Get-Command *)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/services/test_claude_service.py::TestBuildImagenPrompt -v --no-header)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/ -v --no-header)",
+      "WebSearch",
+      "WebFetch(domain:developers.openai.com)",
+      "Bash(python -m pytest tests/services/test_openai_image_service.py -v)",
+      "Bash(python -m pytest tests/services/test_claude_service.py -v -k \"TestBuildImagenPrompt\")"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "shadcn"
+  ]
+}

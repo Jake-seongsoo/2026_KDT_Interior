@@ -1,0 +1,86 @@
+import { createClient } from '@/lib/supabase/client'
+import type { AnalyzeResponse, RenderRequest, RenderResponse } from '@/types/api'
+
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+
+export class AuthRequiredError extends Error {
+  constructor() {
+    super('로그인이 필요합니다.')
+    this.name = 'AuthRequiredError'
+  }
+}
+
+async function getAuthHeaders(): Promise<HeadersInit> {
+  const sb = createClient()
+  const { data } = await sb.auth.getSession()
+  if (!data.session) {
+    throw new AuthRequiredError()
+  }
+  return { Authorization: `Bearer ${data.session.access_token}` }
+}
+
+export async function postAnalyze(
+  file: File,
+  floorAreaPyeong: number,
+): Promise<AnalyzeResponse> {
+  const headers = await getAuthHeaders()
+  const fd = new FormData()
+  fd.append('file', file)
+  fd.append('floor_area_pyeong', String(floorAreaPyeong))
+
+  const res = await fetch(`${BASE}/analyze`, {
+    method: 'POST',
+    headers,
+    body: fd,
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? '분석 요청에 실패했습니다.')
+  }
+
+  return res.json()
+}
+
+export async function postRender(body: RenderRequest): Promise<RenderResponse> {
+  const headers = await getAuthHeaders()
+
+  const res = await fetch(`${BASE}/render`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(body),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? '렌더링 요청에 실패했습니다.')
+  }
+
+  return res.json()
+}
+
+export async function getAnalyzeResult(sessionId: string): Promise<AnalyzeResponse> {
+  const headers = await getAuthHeaders()
+
+  const res = await fetch(`${BASE}/analyze/${sessionId}`, { headers })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? '분석 결과를 불러오지 못했습니다.')
+  }
+
+  return res.json()
+}
+
+export async function getRenderResult(resultId: string): Promise<RenderResponse> {
+  const headers = await getAuthHeaders()
+
+  const res = await fetch(`${BASE}/results/${resultId}`, { headers })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? '렌더링 결과를 불러오지 못했습니다.')
+  }
+
+  return res.json()
+}
