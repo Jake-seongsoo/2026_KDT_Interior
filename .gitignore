@@ -29,3 +29,11 @@ Thumbs.db
 
 # Claude Code 로컬 설정
 .claude/settings.local.json
+
+# 샘플/테스트용 이미지 (저작권 우려)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+!frontend/public/**
