@@ -30,21 +30,35 @@ class NaverService:
     }
 
   async def search_products(self, keyword: str, display: int = 5) -> list[dict]:
-    """네이버쇼핑에서 키워드로 상품을 검색한다. 동시 요청은 최대 3개로 제한한다."""
+    """네이버쇼핑에서 키워드로 상품을 검색한다. 동시 요청은 최대 3개로 제한한다.
+
+    카탈로그 상품(productType=1) 우선 노출을 위해 display * 4개(최대 20)를 가져온 뒤
+    정렬 후 상위 display개만 반환한다.
+    """
+    fetch_count = min(display * 4, 20)
     async with _NAVER_SEMAPHORE:
       try:
         async with httpx.AsyncClient(timeout=10.0) as client:
           resp = await client.get(
             _BASE_URL,
             headers=self._headers,
-            params={'query': keyword, 'display': display, 'sort': 'sim'},
+            params={'query': keyword, 'display': fetch_count, 'sort': 'sim'},
           )
           resp.raise_for_status()
           items = resp.json().get('items', [])
-          return [self._normalize(item) for item in items]
+          sorted_items = self._sort_by_catalog(items)
+          return [self._normalize(item) for item in sorted_items[:display]]
       except httpx.HTTPError as e:
         logger.warning('Naver 쇼핑 API 오류 (keyword=%s): %s', keyword, e)
         return []
+
+  @staticmethod
+  def _sort_by_catalog(items: list[dict]) -> list[dict]:
+    """카탈로그 상품(productType=1)을 앞으로 정렬한다.
+
+    카탈로그 상품은 여러 판매처 리뷰가 합산되어 리뷰 수가 많고 신뢰도가 높다.
+    """
+    return sorted(items, key=lambda x: x.get('productType') != 1)
 
   @staticmethod
   def _build_purchase_url(item: dict) -> str | None:

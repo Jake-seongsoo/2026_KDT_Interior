@@ -1,4 +1,4 @@
-"""NaverService._build_purchase_url 단위 테스트."""
+"""NaverService 단위 테스트."""
 from urllib.parse import quote
 
 import pytest
@@ -80,3 +80,41 @@ class TestBuildPurchaseUrl:
     }
     result = NaverService._normalize(item)
     assert result['purchase_url'] == _MERCHANT_LINK
+
+
+def _make_item(product_type: int, title: str = '상품') -> dict:
+  return {'productId': '1', 'productType': product_type, 'title': title, 'link': ''}
+
+
+class TestSortByCatalog:
+  def test_catalog_items_come_first(self):
+    items = [
+      _make_item(2, '단독상품A'),
+      _make_item(1, '카탈로그상품B'),
+      _make_item(2, '단독상품C'),
+      _make_item(1, '카탈로그상품D'),
+    ]
+    result = NaverService._sort_by_catalog(items)
+    assert result[0]['title'] == '카탈로그상품B'
+    assert result[1]['title'] == '카탈로그상품D'
+
+  def test_all_catalog_items_unchanged_order(self):
+    items = [_make_item(1, f'상품{i}') for i in range(3)]
+    result = NaverService._sort_by_catalog(items)
+    assert [r['title'] for r in result] == ['상품0', '상품1', '상품2']
+
+  def test_all_non_catalog_items_unchanged_order(self):
+    items = [_make_item(2, f'상품{i}') for i in range(3)]
+    result = NaverService._sort_by_catalog(items)
+    assert [r['title'] for r in result] == ['상품0', '상품1', '상품2']
+
+  def test_empty_list_returns_empty(self):
+    assert NaverService._sort_by_catalog([]) == []
+
+  def test_missing_product_type_treated_as_non_catalog(self):
+    items = [
+      {'productId': '1', 'title': 'productType없음', 'link': ''},
+      _make_item(1, '카탈로그상품'),
+    ]
+    result = NaverService._sort_by_catalog(items)
+    assert result[0]['title'] == '카탈로그상품'

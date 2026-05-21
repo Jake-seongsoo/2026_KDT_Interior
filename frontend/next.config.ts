@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
         hostname: 'shopping-phinf.pstatic.net',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'www.ikea.com',
+        pathname: '/**',
+      },
     ],
   },
 }

@@ -63,6 +63,7 @@ class ProductOut(BaseModel):
   purchase_url: str | None = None
   match_score: float | None = None         # Vision 재랭킹 점수 (0~1). 미사용 시 None
   match_reasons: list[str] | None = None  # 일치 이유 ("색상 일치", "구조/재질 일치" 등)
+  source: str | None = None               # 상품 출처 ('naver' | 'ikea')
 
 
 class RoomResultOut(BaseModel):
