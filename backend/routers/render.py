@@ -38,20 +38,29 @@ def _to_tone_out(tone: dict) -> ToneCandidateOut:
 
 
 def _room_slug(room_type: str) -> str:
-  """방 이름을 GCS 경로에 사용 가능한 슬러그로 변환한다."""
+  """방 이름을 GCS 경로에 사용 가능한 슬러그로 변환한다.
+
+  매칭 우선순위: 정확 → endswith(부부욕실→욕실) → startswith(침실2→침실)
+  """
   slug_map = {
     '거실': 'livingroom',
     '주방': 'kitchen',
+    '주방/식당': 'kitchen',
     '안방': 'master_bedroom',
     '침실': 'bedroom',
     '욕실': 'bathroom',
     '발코니': 'balcony',
+    '발코나': 'balcony',
     '현관': 'entrance',
     '다용도실': 'utility',
+    '알파룸': 'alpha_room',
+    '드레스룸': 'dressroom',
   }
   if room_type in slug_map:
     return slug_map[room_type]
-  # 침실2, 침실3 등 번호 포함 방 이름 처리
+  for key, slug in slug_map.items():
+    if room_type.endswith(key):
+      return slug
   for key, slug in slug_map.items():
     if room_type.startswith(key):
       suffix = room_type[len(key):]
@@ -72,11 +81,18 @@ def _build_naver_query(room: dict, tone: dict) -> str:
     '침실': '침대',
     '욕실': '수납장',
     '발코니': '선반',
+    '발코나': '선반',
+    '알파룸': '책상',
+    '드레스룸': '행거',
   }
-  # 침실2, 침실3 등 번호 포함 방 이름은 prefix 기준으로 매칭
-  furniture = furniture_map.get(room_type) or next(
-    (v for k, v in furniture_map.items() if room_type.startswith(k)), '가구'
-  )
+  furniture = furniture_map.get(room_type)
+  if furniture is None:
+    # endswith 매칭 (부부욕실→욕실)
+    furniture = next((v for k, v in furniture_map.items() if room_type.endswith(k)), None)
+  if furniture is None:
+    # startswith 매칭 (침실2→침실)
+    furniture = next((v for k, v in furniture_map.items() if room_type.startswith(k)), '가구')
+
   style = keywords[0] if keywords else tone.get('name', '')
 
   return f'{style} {furniture} {room_type}'

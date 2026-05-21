@@ -268,6 +268,32 @@ class TestBuildImagenPrompt:
     assert 'bedroom' in prompt
     assert '침실' not in prompt
 
+  def test_couple_bathroom_uses_master_bathroom(self, service):
+    """부부욕실 프롬프트는 'master bathroom'으로 변환되고 욕실 힌트가 적용된다."""
+    room = {'room_type': '부부욕실'}
+    prompt = service.build_imagen_prompt(room, BATHROOM_TONE)
+    assert 'bathroom' in prompt
+    assert '부부욕실' not in prompt
+    assert '소파' not in prompt
+    assert 'no sofa' in prompt
+    assert 'vanity' in prompt
+
+  def test_family_bathroom_uses_bathroom_hints(self, service):
+    """가족욕실 프롬프트에 욕실 전용 힌트와 negative 단서가 적용된다."""
+    room = {'room_type': '가족욕실'}
+    prompt = service.build_imagen_prompt(room, BATHROOM_TONE)
+    assert 'bathroom' in prompt
+    assert '가족욕실' not in prompt
+    assert 'no sofa' in prompt
+    assert 'vanity' in prompt
+
+  def test_alpha_room_uses_english_name(self, service):
+    """알파룸 프롬프트에 영어 이름이 사용된다."""
+    room = {'room_type': '알파룸'}
+    prompt = service.build_imagen_prompt(room, BATHROOM_TONE)
+    assert 'flexible room' in prompt
+    assert '알파룸' not in prompt
+
 
 # ── generate_furniture_queries 빈 텍스트 처리 테스트 ────────────────────────
 

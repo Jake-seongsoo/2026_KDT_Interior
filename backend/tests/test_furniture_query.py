@@ -27,6 +27,13 @@ class TestGetFurnitureSlots:
     assert get_furniture_slots('침실2') == ROOM_FURNITURE_SLOTS['침실']
     assert get_furniture_slots('침실3') == ROOM_FURNITURE_SLOTS['침실']
 
+  def test_couple_bathroom_endswith_match(self):
+    # 부부욕실은 '욕실'로 끝나므로 욕실 슬롯과 동일해야 함
+    assert get_furniture_slots('부부욕실') == ROOM_FURNITURE_SLOTS['욕실']
+
+  def test_family_bathroom_endswith_match(self):
+    assert get_furniture_slots('가족욕실') == ROOM_FURNITURE_SLOTS['욕실']
+
   def test_unknown_room_type_returns_default(self):
     result = get_furniture_slots('창고')
     assert result == DEFAULT_FURNITURE_SLOTS

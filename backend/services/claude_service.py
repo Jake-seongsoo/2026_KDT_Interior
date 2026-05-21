@@ -23,23 +23,32 @@ _ROOM_EXCLUDED_KEYWORDS: dict[str, set[str]] = {
 }
 
 # 방 유형의 영문 자연어 이름 (Imagen 프롬프트용 — 한국어 토큰이 영어 모델 해석을 흐림)
+# 복합 방 이름(부부욕실, 가족욕실)을 직접 등록해 startswith/endswith 매칭보다 우선한다
 _ROOM_EN_NAMES: dict[str, str] = {
   '거실': 'living room',
   '주방': 'kitchen',
+  '주방/식당': 'kitchen and dining',
   '안방': 'master bedroom',
   '침실': 'bedroom',
   '욕실': 'bathroom',
+  '부부욕실': 'master bathroom',
+  '가족욕실': 'family bathroom',
   '발코니': 'balcony',
+  '발코나': 'balcony',
   '현관': 'entrance',
   '다용도실': 'utility room',
   '작은방': 'small bedroom',
+  '알파룸': 'flexible room',
+  '드레스룸': 'walk-in closet',
 }
 
 # 방 유형별 Imagen negative 단서 (해당 공간에 절대 등장하면 안 되는 사물)
+# 복합 이름(부부욕실·가족욕실)은 endswith 매칭으로 처리되므로 기본 키만 등록
 _ROOM_NEGATIVE_HINTS: dict[str, str] = {
   '욕실': 'no sofa, no couch, no bed, no dining table, no rug, no curtain',
   '주방': 'no sofa, no bed',
   '발코니': 'no sofa, no bed, no dining table',
+  '발코나': 'no sofa, no bed, no dining table',
 }
 
 # 방 유형별 이미지 프롬프트에 강제 포함할 공간 힌트 (영문)
@@ -47,6 +56,7 @@ _ROOM_SPACE_HINTS: dict[str, str] = {
   '욕실': 'bathroom with bathtub or shower, vanity mirror, towel rack',
   '주방': 'kitchen with cabinets and countertop',
   '발코니': 'balcony with plants and outdoor furniture',
+  '발코나': 'balcony with plants and outdoor furniture',
 }
 
 # 가구별 네이버 검색어 생성 시스템 프롬프트
@@ -279,27 +289,46 @@ class ClaudeService:
     logger.info('톤 후보 %d개 생성 완료 (cache_hit=%s)', len(tones), snapshot['cache_hit'])
     return tones, snapshot
 
+  @staticmethod
+  def _lookup_room_key(room_type: str, key_map: dict) -> str | None:
+    """방 이름으로 딕셔너리 키를 찾는다.
+
+    우선순위: 정확 매칭 → endswith 매칭(부부욕실→욕실) → startswith 매칭(침실2→침실)
+    """
+    if room_type in key_map:
+      return room_type
+    for key in key_map:
+      if room_type.endswith(key):
+        return key
+    for key in key_map:
+      if room_type.startswith(key):
+        return key
+    return None
+
   def build_imagen_prompt(self, room: dict, tone: dict) -> str:
     """방 정보와 선택 톤을 기반으로 Imagen 프롬프트를 생성한다."""
     room_type = room.get('room_type', '거실')
 
     # 한국어 방 이름을 영어로 변환 (Imagen은 영어 모델 — 한국어 토큰이 공간 인식을 흐림)
+    # 정확 매칭 우선, 없으면 endswith/startswith 순 매칭
     room_en = _ROOM_EN_NAMES.get(room_type)
     if room_en is None:
-      for key, name in _ROOM_EN_NAMES.items():
-        if room_type.startswith(key):
-          suffix = room_type[len(key):]
-          room_en = f'{name} {suffix}'.strip() if suffix else name
-          break
+      matched_key = self._lookup_room_key(room_type, _ROOM_EN_NAMES)
+      if matched_key:
+        base_name = _ROOM_EN_NAMES[matched_key]
+        if room_type.startswith(matched_key):
+          suffix = room_type[len(matched_key):]
+          room_en = f'{base_name} {suffix}'.strip() if suffix else base_name
+        else:
+          room_en = base_name
     if room_en is None:
       room_en = room_type
 
     # 방 유형과 맞지 않는 가구 키워드 제거 (욕실에 소파 등 방지)
     excluded = set()
-    for key, kw_set in _ROOM_EXCLUDED_KEYWORDS.items():
-      if room_type == key or room_type.startswith(key):
-        excluded = kw_set
-        break
+    excl_key = self._lookup_room_key(room_type, _ROOM_EXCLUDED_KEYWORDS)
+    if excl_key:
+      excluded = _ROOM_EXCLUDED_KEYWORDS[excl_key]
 
     filtered_keywords = [
       kw for kw in tone.get('keywords', [])
@@ -312,17 +341,15 @@ class ClaudeService:
 
     # 방 유형별 공간 힌트 (욕실 등 특수 공간에 적합한 요소 강제 포함)
     space_hint = ''
-    for key, hint in _ROOM_SPACE_HINTS.items():
-      if room_type == key or room_type.startswith(key):
-        space_hint = f'{hint}, '
-        break
+    hint_key = self._lookup_room_key(room_type, _ROOM_SPACE_HINTS)
+    if hint_key:
+      space_hint = f'{_ROOM_SPACE_HINTS[hint_key]}, '
 
     # 방 유형별 negative 단서 (해당 공간에 절대 그려선 안 되는 사물 명시)
     negative_hint = ''
-    for key, neg in _ROOM_NEGATIVE_HINTS.items():
-      if room_type == key or room_type.startswith(key):
-        negative_hint = f', {neg}'
-        break
+    neg_key = self._lookup_room_key(room_type, _ROOM_NEGATIVE_HINTS)
+    if neg_key:
+      negative_hint = f', {_ROOM_NEGATIVE_HINTS[neg_key]}'
 
     return (
       f'Korean apartment {room_en} interior design, '
@@ -402,7 +429,7 @@ room_id는 위 목록의 값을 그대로 사용하세요.'''
       messages=[{'role': 'user', 'content': prompt}],
     )
 
-    text = next((block.text for block in resp.content if hasattr(block, 'text')), '')
+    text = next((block.text for block in resp.content if hasattr(block, 'text') and block.text), '')
     if not text.strip():
       raise ValueError('Claude 가구 쿼리 응답이 비어있습니다')
     parsed = _parse_json_block(text)
@@ -425,7 +452,7 @@ room_id는 위 목록의 값을 그대로 사용하세요.'''
     image_bytes: bytes,
     mime: str,
     slots: list[str],
-    timeout_s: float = 8.0,
+    timeout_s: float = 15.0,
   ) -> dict[str, dict] | None:
     """Imagen이 생성한 방 이미지에서 가구 슬롯별 시각 속성을 추출한다.
 
@@ -463,5 +490,5 @@ room_id는 위 목록의 값을 그대로 사용하세요.'''
       logger.info('Vision 재분석 완료: 슬롯 %d개', len(result))
       return result
     except Exception as e:
-      logger.warning('Vision 재분석 실패, 텍스트 필터로 폴백: %s', e)
+      logger.warning('Vision 재분석 실패, 텍스트 필터로 폴백: %s', e, exc_info=True)
       return None
