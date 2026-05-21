@@ -1,7 +1,7 @@
-"""rerank_products_by_visuals 단위 테스트."""
+"""product_filter 단위 테스트 — rerank_products_by_visuals, enrich_query_with_vision."""
 import pytest
 
-from services.product_filter import filter_products_by_expected_colors, rerank_products_by_visuals
+from services.product_filter import enrich_query_with_vision, filter_products_by_expected_colors, rerank_products_by_visuals
 
 
 def _make_product(name: str, **kwargs) -> dict:
@@ -123,3 +123,41 @@ class TestRerankProductsByVisuals:
     result = rerank_products_by_visuals([], ['원목'], VISUAL_ATTRS, limit=3)
 
     assert result == []
+
+
+class TestEnrichQueryWithVision:
+  def test_재질과_스타일_토큰이_쿼리에_추가된다(self):
+    attrs = {'materials': ['패브릭'], 'style_tokens': ['미니멀'], 'primary_hex': None}
+    result = enrich_query_with_vision('모던 소파', attrs)
+    assert '패브릭' in result
+    assert '미니멀' in result
+
+  def test_색상_hex가_한국어로_변환되어_추가된다(self):
+    attrs = {'materials': [], 'style_tokens': [], 'primary_hex': '#F5F5F5'}
+    result = enrich_query_with_vision('침대 프레임', attrs)
+    # #F5F5F5 → 화이트/아이보리 계열
+    assert '침대 프레임' in result
+    assert len(result) > len('침대 프레임')
+
+  def test_이미_포함된_토큰은_중복_추가하지_않는다(self):
+    attrs = {'materials': ['패브릭'], 'style_tokens': ['모던'], 'primary_hex': None}
+    result = enrich_query_with_vision('모던 패브릭 소파', attrs)
+    assert result.count('모던') == 1
+    assert result.count('패브릭') == 1
+
+  def test_slot_attrs가_None이면_base_query_그대로_반환(self):
+    assert enrich_query_with_vision('소파', None) == '소파'
+
+  def test_slot_attrs가_빈_dict면_base_query_그대로_반환(self):
+    assert enrich_query_with_vision('소파', {}) == '소파'
+
+  def test_추출_토큰이_없으면_base_query_그대로_반환(self):
+    attrs = {'materials': [], 'style_tokens': [], 'primary_hex': None}
+    assert enrich_query_with_vision('식탁', attrs) == '식탁'
+
+  def test_재질_최대_2개만_추가된다(self):
+    attrs = {'materials': ['원목', '철재', '유리'], 'style_tokens': [], 'primary_hex': None}
+    result = enrich_query_with_vision('선반', attrs)
+    assert '원목' in result
+    assert '철재' in result
+    assert '유리' not in result

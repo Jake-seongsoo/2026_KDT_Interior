@@ -145,3 +145,25 @@ def rerank_products_by_visuals(
 
   scored.sort(key=lambda x: x['match_score'], reverse=True)
   return scored[:limit]
+
+
+def enrich_query_with_vision(base_query: str, slot_attrs: dict | None) -> str:
+  """Vision 추출 속성(색상·재질·스타일)으로 이케아 검색 쿼리를 보강한다.
+
+  slot_attrs가 없거나 추출 토큰이 없으면 base_query를 그대로 반환한다.
+  """
+  if not slot_attrs or not isinstance(slot_attrs, dict):
+    return base_query
+
+  tokens: list[str] = []
+  tokens.extend((slot_attrs.get('materials') or [])[:2])
+  tokens.extend((slot_attrs.get('style_tokens') or [])[:2])
+
+  color_tokens = _hex_to_korean_color(slot_attrs.get('primary_hex'))
+  if color_tokens:
+    tokens.append(color_tokens[0])
+
+  base_lower = base_query.lower()
+  new_tokens = [t for t in tokens if t.lower() not in base_lower]
+
+  return f'{base_query} {" ".join(new_tokens)}'.strip() if new_tokens else base_query
