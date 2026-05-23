@@ -70,6 +70,7 @@ class RoomResultOut(BaseModel):
   room_id: UUID
   room_type: str
   rationale: str
+  area_sqm: float | None = None      # Claude Vision 추출 면적 (㎡). 미인식 시 None
   render_url: str | None = None      # GCS public URL. 렌더링 실패 시 None
   products: list[ProductOut] = []
   visual_attributes: dict | None = None  # Vision 추출 시각 속성 (슬롯별 색상·구조)

@@ -141,7 +141,7 @@ async def analyze(
   if not raw_rooms:
     await db.update_session_status(session_id, 'failed')
     raise HTTPException(
-      status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+      status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
       detail='도면에서 방을 인식하지 못했습니다. 한글 방 이름이 보이는 선명한 도면을 사용해주세요.',
     )
 

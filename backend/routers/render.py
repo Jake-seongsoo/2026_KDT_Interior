@@ -171,6 +171,66 @@ async def _build_furniture_queries(
     ]
 
 
+async def _verify_session_and_tone(
+  db: SupabaseService,
+  body: RenderRequest,
+  user: AuthUser,
+) -> tuple[dict, list[dict], dict]:
+  """세션 소유자 확인 + 렌더링 대상 방 + 선택 톤을 조회한다."""
+  try:
+    session = await db.get_session(str(body.session_id))
+  except ValueError as e:
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+
+  if session.get('user_id') != user.user_id:
+    raise HTTPException(
+      status_code=status.HTTP_403_FORBIDDEN,
+      detail='이 세션에 접근할 권한이 없습니다.',
+    )
+
+  rooms = await db.get_render_target_rooms(str(body.session_id))
+  if not rooms:
+    raise HTTPException(
+      status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+      detail='렌더링할 방이 없습니다.',
+    )
+
+  try:
+    tone = await db.get_tone(str(body.selected_tone_id))
+  except ValueError as e:
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+
+  if tone.get('session_id') != str(body.session_id):
+    raise HTTPException(
+      status_code=status.HTTP_400_BAD_REQUEST,
+      detail='선택한 톤이 이 세션에 속하지 않습니다.',
+    )
+
+  return session, rooms, tone
+
+
+async def _upload_render_image(
+  img_result: bytes | Exception,
+  room: dict,
+  room_index: int,
+  rationale: str,
+  result_id: str,
+  storage: StorageService,
+) -> tuple[str | None, str, str]:
+  """렌더링 이미지를 GCS에 업로드하고 (render_url, gcs_path, rationale)을 반환한다."""
+  if isinstance(img_result, Exception):
+    logger.warning('방 렌더링 실패 (%s): %s', room['room_type'], img_result)
+    return None, '', f'{room["room_type"]} 이미지 생성에 실패했습니다.'
+
+  slug = _room_slug(room['room_type'])
+  if room_index > 0:
+    slug = f'{slug}_{room_index}'
+
+  gcs_path = await asyncio.to_thread(storage.upload_render, result_id, slug, img_result)
+  render_url = storage.public_url_for_render(gcs_path)
+  return render_url, gcs_path, rationale
+
+
 @router.post('/render', response_model=RenderResponse)
 async def render(
   body: RenderRequest,
@@ -185,37 +245,7 @@ async def render(
   ikea = IkeaService()
   claude = ClaudeService()
 
-  # 세션 소유자 확인 (RISK-03)
-  try:
-    session = await db.get_session(str(body.session_id))
-  except ValueError as e:
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-
-  if session.get('user_id') != user.user_id:
-    raise HTTPException(
-      status_code=status.HTTP_403_FORBIDDEN,
-      detail='이 세션에 접근할 권한이 없습니다.',
-    )
-
-  # 렌더링 대상 방 (거실·침실·주방·욕실 등 생활 공간, 현관·다용도실 등 제외)
-  rooms = await db.get_render_target_rooms(str(body.session_id))
-  if not rooms:
-    raise HTTPException(
-      status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-      detail='렌더링할 방이 없습니다.',
-    )
-
-  # 선택한 톤 조회
-  try:
-    tone = await db.get_tone(str(body.selected_tone_id))
-  except ValueError as e:
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-
-  if tone.get('session_id') != str(body.session_id):
-    raise HTTPException(
-      status_code=status.HTTP_400_BAD_REQUEST,
-      detail='선택한 톤이 이 세션에 속하지 않습니다.',
-    )
+  session, rooms, tone = await _verify_session_and_tone(db, body, user)
 
   # 방별 Imagen 프롬프트 생성
   imagen_specs = [
@@ -298,23 +328,9 @@ async def render(
     img_result = image_results[i] if i < len(image_results) else Exception('인덱스 초과')
     prod_result = product_results[i] if i < len(product_results) else []
 
-    # 렌더링 성공 시 GCS 업로드
-    render_url = None
-    render_gcs_path = ''
-    rationale = spec['rationale']
-
-    if isinstance(img_result, Exception):
-      logger.warning('방 렌더링 실패 (%s): %s', room['room_type'], img_result)
-      rationale = f'{room["room_type"]} 이미지 생성에 실패했습니다.'
-    else:
-      slug = _room_slug(room['room_type'])
-      # 같은 방 유형이 여러 개면 인덱스 추가
-      if i > 0:
-        slug = f'{slug}_{i}'
-      render_gcs_path = await asyncio.to_thread(
-        storage.upload_render, result_id, slug, img_result
-      )
-      render_url = storage.public_url_for_render(render_gcs_path)
+    render_url, render_gcs_path, rationale = await _upload_render_image(
+      img_result, room, i, spec['rationale'], result_id, storage
+    )
 
     # room_renders 저장
     render_row = await db.insert_room_render(
