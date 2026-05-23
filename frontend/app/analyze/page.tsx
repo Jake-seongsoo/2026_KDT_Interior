@@ -21,6 +21,15 @@ const CUSTOM_STEPS = [
 ]
 const STEP_ESTIMATES_SECONDS = [3, 12, 55]
 
+const totalEstimatedSeconds = STEP_ESTIMATES_SECONDS.reduce((a, b) => a + b, 0)
+
+function formatEstimatedTime(seconds: number): string {
+  if (seconds < 60) return `약 ${seconds}초`
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return secs === 0 ? `약 ${mins}분` : `약 ${mins}분 ${secs}초`
+}
+
 export default function AnalyzePage() {
   const router = useRouter()
   const [stepIdx, setStepIdx] = useState(0)
@@ -132,7 +141,7 @@ export default function AnalyzePage() {
           >
             도면을 분석하고 있습니다
           </h1>
-          <p className='mt-3 text-sm text-stone-500'>보통 10~15초 정도 소요됩니다.</p>
+          <p className='mt-3 text-sm text-stone-500'>{formatEstimatedTime(totalEstimatedSeconds)} 정도 소요됩니다.</p>
         </div>
 
         {error ? (

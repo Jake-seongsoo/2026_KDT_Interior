@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { AuthRequiredError, postRender } from '@/lib/api'
+import { refinementStorage } from '@/lib/session-storage'
 import { StepProgress } from '@/components/common/StepProgress'
 import { Button } from '@/components/ui/button'
 import type { ToneCandidateOut } from '@/types/api'
@@ -14,6 +15,14 @@ const STEPS = [
   '추천 상품 검색 중',
 ]
 const STEP_ESTIMATES_SECONDS = [3, 35, 10]
+const totalEstimatedSeconds = STEP_ESTIMATES_SECONDS.reduce((a, b) => a + b, 0)
+
+function formatEstimatedTime(seconds: number): string {
+  if (seconds < 60) return `약 ${seconds}초`
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return secs === 0 ? `약 ${mins}분` : `약 ${mins}분 ${secs}초`
+}
 
 export default function RenderPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -52,10 +61,13 @@ export default function RenderPage() {
           (STEP_ESTIMATES_SECONDS[0] + STEP_ESTIMATES_SECONDS[1]) * 1000,
         )
 
+        const refinement = refinementStorage.load(sessionId)
         const result = await postRender({
           session_id: sessionId,
           selected_tone_id: tone.id,
+          ...(refinement ?? {}),
         })
+        refinementStorage.clear(sessionId)
 
         setStepIdx(2)
         sessionStorage.setItem(`render:${result.result_id}`, JSON.stringify(result))
@@ -119,7 +131,7 @@ export default function RenderPage() {
               <span className='text-stone-300'>"{toneName}"</span> 톤으로 렌더링 중
             </p>
           )}
-          <p className='mt-1 text-sm text-stone-500'>보통 20~40초 정도 소요됩니다.</p>
+          <p className='mt-1 text-sm text-stone-500'>{formatEstimatedTime(totalEstimatedSeconds)} 정도 소요됩니다.</p>
         </div>
 
         {error ? (

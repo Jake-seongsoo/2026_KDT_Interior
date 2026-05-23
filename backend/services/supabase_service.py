@@ -77,6 +77,8 @@ class SupabaseService:
         'priority': room.get('priority', idx + 1),
         'is_render_target': room.get('room_type', '') not in _NON_RENDER_TYPES,
         'position': room.get('position'),
+        'has_adjoining_balcony': bool(room.get('has_adjoining_balcony', False)),
+        'balcony_expanded': room.get('balcony_expanded'),
       })
 
     resp = self._db.table('rooms').insert(rows).execute()
@@ -149,6 +151,7 @@ class SupabaseService:
     budget_10k_won: int | None,
     trend_snapshot: dict | None,
     processing_ms: int = 0,
+    refinement_params: dict | None = None,
   ) -> dict:
     data = {
       'id': str(uuid.uuid4()),
@@ -158,6 +161,7 @@ class SupabaseService:
       'budget_10k_won': budget_10k_won,
       'trend_snapshot': trend_snapshot,
       'processing_ms': processing_ms,
+      'refinement_params': refinement_params,
     }
     resp = self._db.table('recommendation_results').insert(data).execute()
     return resp.data[0]

@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Check } from 'lucide-react'
 
 interface Step {
@@ -15,34 +16,63 @@ interface StepProgressProps {
   dark?: boolean
 }
 
+const OVERTIME_MESSAGES = [
+  '거의 완료되었습니다...',
+  '마무리 작업 중입니다...',
+  '잠시만 더 기다려 주세요...',
+  '곧 결과를 보여드립니다...',
+]
+
 export function StepProgress({ steps, estimatedSeconds, elapsedSeconds, dark }: StepProgressProps) {
+  const [overtimeIdx, setOvertimeIdx] = useState(0)
+
   const estimates = Array.isArray(estimatedSeconds) ? estimatedSeconds : null
   const totalEstimate: number | undefined = estimates
-    ? estimates.reduce((sum, seconds) => sum + seconds, 0)
+    ? estimates.reduce((sum, s) => sum + s, 0)
     : typeof estimatedSeconds === 'number'
       ? estimatedSeconds
       : undefined
+
   const activeStepIndex = steps.findIndex((step) => step.active)
   const completedEstimate = estimates
-    ? estimates.slice(0, Math.max(activeStepIndex, 0)).reduce((sum, seconds) => sum + seconds, 0)
+    ? estimates.slice(0, Math.max(activeStepIndex, 0)).reduce((sum, s) => sum + s, 0)
     : 0
-  const activeElapsed: number | undefined = elapsedSeconds !== undefined && estimates
-    ? Math.max(0, elapsedSeconds - completedEstimate)
-    : elapsedSeconds
-  const activeEstimate: number | undefined = estimates && activeStepIndex >= 0 ? estimates[activeStepIndex] : totalEstimate
+  const activeElapsed: number | undefined =
+    elapsedSeconds !== undefined && estimates
+      ? Math.max(0, elapsedSeconds - completedEstimate)
+      : elapsedSeconds
+  const activeEstimate: number | undefined =
+    estimates && activeStepIndex >= 0 ? estimates[activeStepIndex] : totalEstimate
   const visualElapsed: number | undefined = estimates
     ? completedEstimate + Math.min(activeElapsed ?? 0, (activeEstimate ?? 0) * 0.9)
     : elapsedSeconds
+
   const allDone = steps.length > 0 && steps.every((step) => step.done)
+
+  const remainingSeconds =
+    allDone
+      ? 0
+      : totalEstimate && elapsedSeconds !== undefined
+        ? Math.max(0, Math.ceil(totalEstimate - elapsedSeconds))
+        : null
+
+  const isOvertime = !allDone && remainingSeconds === 0
+
+  useEffect(() => {
+    if (!isOvertime) {
+      setOvertimeIdx(0)
+      return
+    }
+    const id = setInterval(() => {
+      setOvertimeIdx((i) => (i + 1) % OVERTIME_MESSAGES.length)
+    }, 2500)
+    return () => clearInterval(id)
+  }, [isOvertime])
+
   const progress = allDone
     ? 100
     : totalEstimate && visualElapsed !== undefined
       ? Math.min((visualElapsed / totalEstimate) * 100, 95)
-      : null
-  const remainingSeconds = allDone
-    ? 0
-    : totalEstimate && elapsedSeconds !== undefined
-      ? Math.max(0, Math.ceil(totalEstimate - elapsedSeconds))
       : null
 
   const mutedText = dark ? 'text-stone-400' : 'text-stone-400'
@@ -104,8 +134,10 @@ export function StepProgress({ steps, estimatedSeconds, elapsedSeconds, dark }: 
             />
           </div>
           {remainingSeconds !== null && (
-            <p className={`text-right text-xs ${mutedText}`}>
-              예상 {remainingSeconds}초 남음
+            <p className={`text-right text-xs transition-all ${mutedText}`}>
+              {isOvertime
+                ? OVERTIME_MESSAGES[overtimeIdx]
+                : `예상 ${remainingSeconds}초 남음`}
             </p>
           )}
         </div>

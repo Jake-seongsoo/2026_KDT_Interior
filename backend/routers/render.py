@@ -247,11 +247,13 @@ async def render(
 
   session, rooms, tone = await _verify_session_and_tone(db, body, user)
 
+  refinement = body.refinement_dict()
+
   # 방별 Imagen 프롬프트 생성
   imagen_specs = [
     {
       'room_type': room['room_type'],
-      'prompt': claude.build_imagen_prompt(room, tone),
+      'prompt': claude.build_imagen_prompt(room, tone, refinement=refinement),
       'rationale': claude.build_rationale(room, tone),
     }
     for room in rooms
@@ -272,6 +274,7 @@ async def render(
     selected_tone_id=str(body.selected_tone_id),
     budget_10k_won=body.budget_10k_won,
     trend_snapshot=session.get('trend_snapshot'),
+    refinement_params=refinement,
   )
   result_id = result['id']
 

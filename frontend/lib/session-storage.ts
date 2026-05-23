@@ -1,4 +1,4 @@
-import type { AnalyzeResponse, RenderResponse, ToneCandidateOut } from '@/types/api'
+import type { AnalyzeResponse, RefinementParams, RenderResponse, ToneCandidateOut } from '@/types/api'
 
 export type ToneMode = 'auto' | 'custom'
 
@@ -16,6 +16,7 @@ const KEYS = {
   customInput: 'tone:custom_input',
   analyze: (sessionId: string) => `analyze:${sessionId}`,
   tone: (sessionId: string) => `tone:${sessionId}`,
+  refinement: (sessionId: string) => `refinement:${sessionId}`,
   renderResult: (resultId: string) => `render:${resultId}`,
   renderSession: (resultId: string) => `render_session:${resultId}`,
 } as const
@@ -88,6 +89,19 @@ export const toneStorage = {
   },
   clear(sessionId: string) {
     sessionStorage.removeItem(KEYS.tone(sessionId))
+  },
+}
+
+export const refinementStorage = {
+  save(sessionId: string, params: RefinementParams) {
+    sessionStorage.setItem(KEYS.refinement(sessionId), JSON.stringify(params))
+  },
+  load(sessionId: string): RefinementParams | null {
+    const raw = sessionStorage.getItem(KEYS.refinement(sessionId))
+    return raw ? (JSON.parse(raw) as RefinementParams) : null
+  },
+  clear(sessionId: string) {
+    sessionStorage.removeItem(KEYS.refinement(sessionId))
   },
 }
 
