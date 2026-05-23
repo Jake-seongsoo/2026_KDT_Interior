@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { AuthRequiredError, postRender } from '@/lib/api'
 import { refinementStorage } from '@/lib/session-storage'
+import { useStepFlow } from '@/hooks/useStepFlow'
 import { StepProgress } from '@/components/common/StepProgress'
 import { Button } from '@/components/ui/button'
 import type { ToneCandidateOut } from '@/types/api'
@@ -27,16 +28,11 @@ function formatEstimatedTime(seconds: number): string {
 export default function RenderPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const router = useRouter()
-  const [stepIdx, setStepIdx] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  const [elapsed, setElapsed] = useState(0)
   const [toneName, setToneName] = useState<string | null>(null)
   const called = useRef(false)
 
-  useEffect(() => {
-    const timer = setInterval(() => setElapsed((s) => s + 1), 1000)
-    return () => clearInterval(timer)
-  }, [])
+  const { stepIdx, setStepIdx, elapsed, steps, complete } = useStepFlow(STEPS)
 
   useEffect(() => {
     if (called.current) return
@@ -69,12 +65,11 @@ export default function RenderPage() {
         })
         refinementStorage.clear(sessionId)
 
-        setStepIdx(2)
         sessionStorage.setItem(`render:${result.result_id}`, JSON.stringify(result))
         sessionStorage.setItem(`render_session:${result.result_id}`, sessionId)
         sessionStorage.removeItem(`tone:${sessionId}`)
 
-        router.push(`/result/${result.result_id}`)
+        await complete(() => router.push(`/result/${result.result_id}`))
       } catch (e) {
         if (e instanceof AuthRequiredError) {
           router.replace(`/auth/login?next=/tones/${sessionId}`)
@@ -89,12 +84,6 @@ export default function RenderPage() {
 
     run()
   }, [sessionId, router])
-
-  const steps = STEPS.map((label, i) => ({
-    label,
-    done: i < stepIdx,
-    active: i === stepIdx,
-  }))
 
   return (
     <div className='flex min-h-[calc(100vh-4rem)] items-center justify-center bg-stone-950 px-4 py-10'>

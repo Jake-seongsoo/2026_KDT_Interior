@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AuthRequiredError, postAnalyze, postAnalyzeCustom } from '@/lib/api'
 import { modeStorage, customInputStorage } from '@/lib/session-storage'
+import { useStepFlow } from '@/hooks/useStepFlow'
 import { StepProgress } from '@/components/common/StepProgress'
 import { Button } from '@/components/ui/button'
 
@@ -32,16 +33,12 @@ function formatEstimatedTime(seconds: number): string {
 
 export default function AnalyzePage() {
   const router = useRouter()
-  const [stepIdx, setStepIdx] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  const [elapsed, setElapsed] = useState(0)
   const [isCustomMode, setIsCustomMode] = useState(false)
   const called = useRef(false)
 
-  useEffect(() => {
-    const timer = setInterval(() => setElapsed((s) => s + 1), 1000)
-    return () => clearInterval(timer)
-  }, [])
+  const STEPS = isCustomMode ? CUSTOM_STEPS : AUTO_STEPS
+  const { stepIdx, setStepIdx, elapsed, steps, complete } = useStepFlow(STEPS)
 
   useEffect(() => {
     if (called.current) return
@@ -87,9 +84,7 @@ export default function AnalyzePage() {
         modeStorage.clear()
         customInputStorage.clear()
 
-        setStepIdx((mode === 'custom' ? CUSTOM_STEPS : AUTO_STEPS).length)
-        await new Promise((resolve) => setTimeout(resolve, 600))
-        router.push(`/tones/${result.session_id}`)
+        await complete(() => router.push(`/tones/${result.session_id}`))
       } catch (e) {
         if (e instanceof AuthRequiredError) {
           router.replace('/auth/login?next=/')
@@ -103,13 +98,6 @@ export default function AnalyzePage() {
 
     run()
   }, [router])
-
-  const STEPS = isCustomMode ? CUSTOM_STEPS : AUTO_STEPS
-  const steps = STEPS.map((label, i) => ({
-    label,
-    done: i < stepIdx,
-    active: i === stepIdx,
-  }))
 
   return (
     <div className='flex min-h-[calc(100vh-4rem)] items-center justify-center bg-stone-950 px-4 py-10'>
