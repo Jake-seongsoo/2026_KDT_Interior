@@ -22,6 +22,19 @@ _ROOM_EXCLUDED_KEYWORDS: dict[str, set[str]] = {
   '발코니': {'소파', '침대', '식탁'},
 }
 
+# 발코니 인접 상태별 Imagen 프롬프트 단서 (비확장/확장형)
+_BALCONY_BOUNDARY_HINTS: dict[str | None, str] = {
+  False: (
+    'room interior bounded by floor-to-ceiling sliding glass door to balcony, '
+    'balcony NOT part of room, no furniture beyond sliding door, '
+    'interior wall ends at glass door'
+  ),
+  True: (
+    'expanded balcony integrated into room with floor-level transition, '
+    'continuous flooring throughout'
+  ),
+}
+
 # 방 유형의 영문 자연어 이름 (Imagen 프롬프트용 — 한국어 토큰이 영어 모델 해석을 흐림)
 # 복합 방 이름(부부욕실, 가족욕실)을 직접 등록해 startswith/endswith 매칭보다 우선한다
 _ROOM_EN_NAMES: dict[str, str] = {
@@ -49,6 +62,11 @@ _ROOM_NEGATIVE_HINTS: dict[str, str] = {
   '주방': 'no sofa, no bed',
   '발코니': 'no sofa, no bed, no dining table',
   '발코나': 'no sofa, no bed, no dining table',
+  # 발코니 인접 거실/침실에 적용: has_adjoining_balcony=true 시 추가 단서로 보강
+  '거실': 'no exterior balcony tiles inside room, no outdoor space as living area',
+  '안방': 'no exterior balcony tiles inside room',
+  '침실': 'no exterior balcony tiles inside room',
+  '작은방': 'no exterior balcony tiles inside room',
 }
 
 # 방 유형별 이미지 프롬프트에 강제 포함할 공간 힌트 (영문)
@@ -57,6 +75,21 @@ _ROOM_SPACE_HINTS: dict[str, str] = {
   '주방': 'kitchen with cabinets and countertop',
   '발코니': 'balcony with plants and outdoor furniture',
   '발코나': 'balcony with plants and outdoor furniture',
+}
+
+# 한국어 가전명 → Imagen 영문 키워드 매핑
+# 이케아 검색 슬롯과 무관 — 렌더링 프롬프트 전용
+_APPLIANCE_EN_MAP: dict[str, str] = {
+  '냉장고': 'built-in refrigerator',
+  '김치냉장고': 'kimchi refrigerator',
+  '세탁기': 'washing machine',
+  '건조기': 'dryer',
+  '스타일러': 'clothing care machine',
+  '전자레인지': 'microwave oven',
+  '식기세척기': 'built-in dishwasher',
+  '인덕션': 'induction cooktop',
+  '공기청정기': 'air purifier',
+  '로봇청소기': 'robot vacuum docking station',
 }
 
 # 가구별 이케아 검색어 생성 시스템 프롬프트
@@ -152,7 +185,9 @@ JSON 코드 블록 외에 어떤 텍스트도 포함하지 마세요.
       "area_sqm": 18.5,
       "confidence": 0.92,
       "priority": 1,
-      "position": {"x": 0.05, "y": 0.10, "w": 0.35, "h": 0.40}
+      "position": {"x": 0.05, "y": 0.10, "w": 0.35, "h": 0.40},
+      "has_adjoining_balcony": true,
+      "balcony_expanded": false
     }
   ],
   "warnings": []
@@ -164,6 +199,8 @@ JSON 코드 블록 외에 어떤 텍스트도 포함하지 마세요.
 - priority: 거실=1, 주방=2, 안방=3, 침실·침실2·침실3 등 번호 순=4·5·6, 기타 순
 - confidence: 0~1 사이 신뢰도 점수
 - position: 도면 이미지 내 상대 좌표 (0~1 정규화). 모를 경우 null
+- has_adjoining_balcony: 이 방이 발코니/베란다와 인접해 있으면 true, 아니면 false. 한국 아파트 도면에서 발코니는 보통 빗금(해칭) 패턴이나 옅은 색상으로 표시되며 깊이 1.0~1.5m
+- balcony_expanded: 발코니와 방 사이 경계선이 점선이거나 없으면 true(확장형), 실선이면 false(비확장형), 판별 불가시 null
 - 문·창문은 추출하지 않음
 - 방이 인식되지 않으면 warnings 배열에 이유 포함'''
 
@@ -426,7 +463,12 @@ class ClaudeService:
         return key
     return None
 
-  def build_imagen_prompt(self, room: dict, tone: dict) -> str:
+  def build_imagen_prompt(
+    self,
+    room: dict,
+    tone: dict,
+    refinement: dict | None = None,
+  ) -> str:
     """방 정보와 선택 톤을 기반으로 Imagen 프롬프트를 생성한다."""
     room_type = room.get('room_type', '거실')
 
@@ -457,7 +499,7 @@ class ClaudeService:
     ]
     keywords = ', '.join(filtered_keywords)
     colors = ', '.join(
-      f"{c['name']}({c['hex']})" for c in tone.get('color_palette', [])
+      c['name'] for c in tone.get('color_palette', [])
     )
 
     # 방 유형별 공간 힌트 (욕실 등 특수 공간에 적합한 요소 강제 포함)
@@ -472,15 +514,74 @@ class ClaudeService:
     if neg_key:
       negative_hint = f', {_ROOM_NEGATIVE_HINTS[neg_key]}'
 
-    return (
+    # 발코니 인접·확장 여부에 따른 경계 단서 생성
+    balcony_hint = ''
+    if room.get('has_adjoining_balcony'):
+      expanded = room.get('balcony_expanded')  # True/False/None
+      hint_text = _BALCONY_BOUNDARY_HINTS.get(expanded, '')
+      if hint_text:
+        balcony_hint = f', {hint_text}'
+
+    base = (
       f'Korean apartment {room_en} interior design, '
       f'{space_hint}'
       f'{tone.get("name", "")} style, '
       f'{keywords}, '
       f'color palette: {colors}, '
       'photorealistic, high quality, natural lighting, 4K resolution, '
-      f'clean modern space, no people{negative_hint}'
+      f'clean modern space, no people{negative_hint}{balcony_hint}'
     )
+
+    appliance_hint = self._build_appliance_hint(room_type, refinement)
+    return base + self._build_refinement_hint(refinement) + appliance_hint
+
+  @staticmethod
+  def _build_appliance_hint(room_type: str, refinement: dict | None) -> str:
+    """refinement.appliances 중 해당 방에 배치된 가전을 Imagen 영문 키워드로 변환한다.
+
+    appliances 리스트가 없거나 해당 방에 매핑된 가전이 없으면 빈 문자열 반환.
+    """
+    if not refinement:
+      return ''
+    appliances: list[dict] = refinement.get('appliances') or []
+    matched = [
+      _APPLIANCE_EN_MAP.get(a['name'], a['name'])
+      for a in appliances
+      if a.get('room') == room_type and a.get('name') in _APPLIANCE_EN_MAP
+    ]
+    if not matched:
+      return ''
+    return ', with ' + ', '.join(matched) + ' integrated naturally into the space'
+
+  @staticmethod
+  def _build_refinement_hint(refinement: dict | None) -> str:
+    """정밀화 파라미터를 Imagen 프롬프트 힌트 문자열로 변환한다."""
+    if not refinement:
+      return ''
+    parts = []
+    family = refinement.get('family_type')
+    if family == 'family_with_kid':
+      parts.append('child-safe layout, rounded edges, soft materials')
+    elif family == 'family_with_pet':
+      parts.append('pet-friendly materials, durable flooring, easy to clean surfaces')
+    elif family == 'couple':
+      parts.append('romantic and cozy atmosphere for two')
+    keywords = refinement.get('style_keywords') or []
+    if keywords:
+      parts.append(f"emphasizing {', '.join(keywords)} style")
+    # appliances 리스트가 있으면 keep_appliances 추상 문구는 생략 (중복 방지)
+    has_appliances = bool(refinement.get('appliances'))
+    if refinement.get('keep_appliances') and not has_appliances:
+      parts.append('retain existing appliances, integrated look')
+    budget = refinement.get('budget_10k_won')
+    if budget and budget <= 2000:
+      parts.append('budget-friendly furniture, cost-effective choices')
+    elif budget and budget >= 8000:
+      parts.append('premium materials, high-end furniture')
+    user_text = refinement.get('user_text')
+    if user_text and user_text.strip():
+      parts.append(user_text.strip())
+    return ', ' + ', '.join(parts) if parts else ''
 
   def build_rationale(self, room: dict, tone: dict) -> str:
     """방별 추천 근거 텍스트를 생성한다."""

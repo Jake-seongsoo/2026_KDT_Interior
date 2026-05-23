@@ -2,13 +2,22 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Home, Palette } from 'lucide-react'
+import { Home, Palette, Settings2 } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { AuthRequiredError, getRenderResult } from '@/lib/api'
 import { LayoutCanvas } from '@/components/result/LayoutCanvas'
 import { RoomTabs } from '@/components/result/RoomTabs'
+import { RefinementModal } from '@/components/result/RefinementModal'
 import { Button } from '@/components/ui/button'
-import type { AnalyzeResponse, RenderResponse } from '@/types/api'
+import { toneStorage, refinementStorage } from '@/lib/session-storage'
+import type { AnalyzeResponse, RefinementParams, RenderResponse } from '@/types/api'
+
+const FAMILY_LABELS: Record<string, string> = {
+  single: '1인 가구',
+  couple: '커플·부부',
+  family_with_kid: '아이와 함께',
+  family_with_pet: '반려동물과 함께',
+}
 
 export default function ResultPage() {
   const { id } = useParams<{ id: string }>()
@@ -18,6 +27,8 @@ export default function ResultPage() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [analyzeRooms, setAnalyzeRooms] = useState<AnalyzeResponse['rooms'] | null>(null)
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null)
+  const [refinementOpen, setRefinementOpen] = useState(false)
+  const [appliedRefinement, setAppliedRefinement] = useState<RefinementParams | null>(null)
   const roomTabsRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
@@ -36,6 +47,8 @@ export default function ResultPage() {
         } catch {
           // 분석 데이터 없어도 무방 — 균등 분할 fallback
         }
+        const refinement = refinementStorage.load(sid)
+        if (refinement) setAppliedRefinement(refinement)
       }
 
       const raw = sessionStorage.getItem(`render:${id}`)
@@ -71,6 +84,14 @@ export default function ResultPage() {
   function handleRoomClick(roomId: string) {
     setSelectedRoomId(roomId)
     roomTabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  function handleRefinementConfirm(params: RefinementParams) {
+    if (!sessionId || !data) return
+    const tone = data.selected_tone
+    toneStorage.save(sessionId, tone)
+    refinementStorage.save(sessionId, params)
+    router.push(`/render/${sessionId}`)
   }
 
   if (error) {
@@ -133,20 +154,74 @@ export default function ResultPage() {
                   </Link>
                 </Button>
                 {sessionId && (
-                  <Button
-                    asChild
-                    size='sm'
-                    className='bg-amber-700 text-white hover:bg-amber-600'
-                  >
-                    <Link href={`/tones/${sessionId}`}>
-                      <Palette className='h-4 w-4' />
-                      다른 톤
-                    </Link>
-                  </Button>
+                  <>
+                    <Button
+                      asChild
+                      variant='outline'
+                      size='sm'
+                      className='border-stone-700 bg-stone-800 text-stone-300 hover:bg-stone-700 hover:text-stone-100'
+                    >
+                      <Link href={`/tones/${sessionId}`}>
+                        <Palette className='h-4 w-4' />
+                        다른 톤
+                      </Link>
+                    </Button>
+                    <Button
+                      size='sm'
+                      className='bg-amber-700 text-white hover:bg-amber-600'
+                      onClick={() => setRefinementOpen(true)}
+                    >
+                      <Settings2 className='h-4 w-4' />
+                      정밀화
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
           </div>
+
+          {/* 정밀화 조건 배지 */}
+          {appliedRefinement && (() => {
+            const chips: string[] = []
+            if (appliedRefinement.budget_10k_won)
+              chips.push(`예산 ${appliedRefinement.budget_10k_won.toLocaleString()}만원`)
+            if (appliedRefinement.family_type)
+              chips.push(FAMILY_LABELS[appliedRefinement.family_type] ?? appliedRefinement.family_type)
+            if (appliedRefinement.style_keywords?.length)
+              chips.push(...appliedRefinement.style_keywords)
+            if (appliedRefinement.keep_appliances)
+              chips.push('기존 가전 유지')
+            const hasChips = chips.length > 0
+            const userText = appliedRefinement.user_text?.trim()
+            if (!hasChips && !userText) return null
+            return (
+              <div className='mt-5 space-y-2'>
+                {hasChips && (
+                  <div className='flex flex-wrap items-center gap-2'>
+                    <span className='text-xs font-semibold uppercase tracking-widest text-stone-500'>
+                      적용된 조건
+                    </span>
+                    {chips.map(chip => (
+                      <span
+                        key={chip}
+                        className='inline-flex items-center rounded-full border border-amber-700/40 bg-amber-700/20 px-2.5 py-0.5 text-xs font-medium text-amber-400'
+                      >
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {userText && (
+                  <div className='rounded-lg border border-amber-700/30 bg-amber-900/10 px-4 py-3'>
+                    <p className='mb-1 text-[10px] font-semibold uppercase tracking-widest text-stone-500'>
+                      추가 요청사항
+                    </p>
+                    <p className='text-sm italic text-stone-300'>"{userText}"</p>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
 
           {/* 팔레트 바 */}
           <div className='mt-8 overflow-hidden rounded-xl' style={{ height: 48 }}>
@@ -198,6 +273,14 @@ export default function ResultPage() {
             rooms={data.room_results}
             activeRoomId={selectedRoomId}
             onChange={setSelectedRoomId}
+            appliancesMap={(() => {
+              const list = appliedRefinement?.appliances
+              if (!list || list.length === 0) return undefined
+              return list.reduce<Record<string, string[]>>((acc, a) => {
+                acc[a.room] = [...(acc[a.room] ?? []), a.name]
+                return acc
+              }, {})
+            })()}
           />
         </section>
 
@@ -207,6 +290,13 @@ export default function ResultPage() {
           <p>처리 시간: {(data.processing_ms / 1000).toFixed(1)}초</p>
         </div>
       </div>
+
+      <RefinementModal
+        open={refinementOpen}
+        onOpenChange={setRefinementOpen}
+        onConfirm={handleRefinementConfirm}
+        rooms={data.room_results.map(r => r.room_type)}
+      />
     </div>
   )
 }

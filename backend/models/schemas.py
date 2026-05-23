@@ -21,6 +21,8 @@ class RoomOut(BaseModel):
   confidence: float = Field(ge=0.0, le=1.0)
   priority: int
   area_sqm: float | None = None
+  has_adjoining_balcony: bool = False
+  balcony_expanded: bool | None = None
 
 
 class ToneCandidateOut(BaseModel):
@@ -46,10 +48,35 @@ class AnalyzeResponse(BaseModel):
 
 # ── /render 요청·응답 모델 ─────────────────────────────────
 
+class Appliance(BaseModel):
+  """사용자가 배치할 가전제품 1개 — 이름과 배치 방 유형을 함께 전달한다."""
+  name: str   # 한국어 가전명 (냉장고, 세탁기 등)
+  room: str   # 배치할 방 유형 (주방, 다용도실 등)
+
+
 class RenderRequest(BaseModel):
   session_id: UUID
   selected_tone_id: UUID
   budget_10k_won: int | None = None
+  family_type: str | None = None        # 'single' | 'couple' | 'family_with_kid' | 'family_with_pet'
+  style_keywords: list[str] | None = None  # 무드 칩 선택 결과
+  keep_appliances: bool | None = None
+  appliances: list[Appliance] | None = None  # 사용자 지정 가전 배치 목록
+  user_text: str | None = None           # 사용자 자유 입력 텍스트
+
+  def refinement_dict(self) -> dict | None:
+    """정밀화 파라미터가 하나라도 있으면 dict로, 없으면 None 반환."""
+    appliances_data = [a.model_dump() for a in self.appliances] if self.appliances else None
+    if any([self.budget_10k_won, self.family_type, self.style_keywords, self.keep_appliances, appliances_data, self.user_text]):
+      return {
+        'budget_10k_won': self.budget_10k_won,
+        'family_type': self.family_type,
+        'style_keywords': self.style_keywords,
+        'keep_appliances': self.keep_appliances,
+        'appliances': appliances_data,
+        'user_text': self.user_text,
+      }
+    return None
 
 
 class ProductOut(BaseModel):

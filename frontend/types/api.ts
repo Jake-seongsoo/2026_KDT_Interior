@@ -32,10 +32,29 @@ export interface AnalyzeResponse {
   warnings: string[]
 }
 
+export interface Appliance {
+  name: string  // 한국어 가전명 (냉장고, 세탁기 등)
+  room: string  // 배치할 방 유형 (주방, 다용도실 등)
+}
+
 export interface RenderRequest {
   session_id: string
   selected_tone_id: string
   budget_10k_won?: number | null
+  family_type?: string | null       // 'single' | 'couple' | 'family_with_kid' | 'family_with_pet'
+  style_keywords?: string[] | null  // 무드 칩 선택 결과
+  keep_appliances?: boolean | null
+  appliances?: Appliance[] | null   // 사용자 지정 가전 배치 목록
+  user_text?: string | null         // 사용자 자유 입력 텍스트
+}
+
+export interface RefinementParams {
+  budget_10k_won?: number | null
+  family_type?: string | null
+  style_keywords?: string[] | null
+  keep_appliances?: boolean | null
+  appliances?: Appliance[] | null
+  user_text?: string | null
 }
 
 export interface ProductOut {
