@@ -42,6 +42,33 @@ export async function postAnalyze(
   return res.json()
 }
 
+export async function postAnalyzeCustom(
+  file: File,
+  floorAreaPyeong: number,
+  userText: string,
+  moodChips: string[],
+): Promise<AnalyzeResponse> {
+  const headers = await getAuthHeaders()
+  const fd = new FormData()
+  fd.append('file', file)
+  fd.append('floor_area_pyeong', String(floorAreaPyeong))
+  fd.append('user_text', userText)
+  fd.append('mood_chips', JSON.stringify(moodChips))
+
+  const res = await fetch(`${BASE}/analyze/custom`, {
+    method: 'POST',
+    headers,
+    body: fd,
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? '분석 요청에 실패했습니다.')
+  }
+
+  return res.json()
+}
+
 export async function postRender(body: RenderRequest): Promise<RenderResponse> {
   const headers = await getAuthHeaders()
 

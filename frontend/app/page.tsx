@@ -1,11 +1,22 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FloorPlanUploader } from '@/components/upload/FloorPlanUploader'
+import { CustomToneInput, type CustomToneInputValue } from '@/components/upload/CustomToneInput'
+import { modeStorage, customInputStorage } from '@/lib/session-storage'
 import { createClient } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
+import type { ToneMode } from '@/lib/session-storage'
 
 export default function HomePage() {
   const router = useRouter()
+  const [mode, setMode] = useState<ToneMode>('auto')
+  const [customInput, setCustomInput] = useState<CustomToneInputValue>({
+    userText: '',
+    moodChips: [],
+  })
+  const [customError, setCustomError] = useState('')
 
   const ensureLoggedIn = async () => {
     const supabase = createClient()
@@ -25,6 +36,12 @@ export default function HomePage() {
       return
     }
 
+    if (mode === 'custom' && !customInput.userText.trim()) {
+      setCustomError('원하는 분위기를 입력해주세요.')
+      return
+    }
+    setCustomError('')
+
     const reader = new FileReader()
     reader.onload = (e) => {
       const base64 = e.target?.result as string
@@ -32,10 +49,37 @@ export default function HomePage() {
       sessionStorage.setItem('upload:file:name', file.name)
       sessionStorage.setItem('upload:file:type', file.type)
       sessionStorage.setItem('upload:floorArea', String(floorAreaPyeong))
+
+      modeStorage.set(mode)
+      if (mode === 'custom') {
+        customInputStorage.set({
+          userText: customInput.userText.trim(),
+          moodChips: customInput.moodChips,
+        })
+      } else {
+        customInputStorage.clear()
+      }
+
       router.push('/analyze')
     }
     reader.readAsDataURL(file)
   }
+
+  const autoSteps = [
+    { step: '01', label: '도면 업로드', desc: '분양 도면이나 네이버 부동산 캡처' },
+    { step: '02', label: '방 구성 분석', desc: 'Claude Vision으로 공간 인식' },
+    { step: '03', label: '인테리어 톤 선택', desc: '2026 트렌드 기반 6가지 팔레트' },
+    { step: '04', label: '방별 제안 확인', desc: 'Imagen 렌더링 + 이케아 추천 상품' },
+  ]
+
+  const customSteps = [
+    { step: '01', label: '도면 업로드', desc: '분양 도면이나 네이버 부동산 캡처' },
+    { step: '02', label: '원하는 분위기 입력', desc: '자유 텍스트 + 무드 키워드 선택' },
+    { step: '03', label: '톤 변형 3가지 확인', desc: '안전 · 중립 · 대담 해석 중 선택' },
+    { step: '04', label: '방별 제안 확인', desc: 'Imagen 렌더링 + 이케아 추천 상품' },
+  ]
+
+  const steps = mode === 'auto' ? autoSteps : customSteps
 
   return (
     <div className='min-h-[calc(100vh-4rem)] bg-[#F5EFE5]'>
@@ -43,9 +87,7 @@ export default function HomePage() {
 
         {/* 좌측: 헤드라인 + 설명 */}
         <section className='lg:pt-4'>
-          <p
-            className='mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700'
-          >
+          <p className='mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700'>
             2026 인테리어 톤 추천
           </p>
 
@@ -66,12 +108,7 @@ export default function HomePage() {
 
           {/* 스텝 표시 */}
           <div className='mt-10 space-y-4'>
-            {[
-              { step: '01', label: '도면 업로드', desc: '분양 도면이나 네이버 부동산 캡처' },
-              { step: '02', label: '방 구성 분석', desc: 'Claude Vision으로 공간 인식' },
-              { step: '03', label: '인테리어 톤 선택', desc: '2026 트렌드 기반 6가지 팔레트' },
-              { step: '04', label: '방별 제안 확인', desc: 'Imagen 렌더링 + 이케아 추천 상품' },
-            ].map(({ step, label, desc }) => (
+            {steps.map(({ step, label, desc }) => (
               <div key={step} className='flex items-start gap-4'>
                 <span
                   className='mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-stone-900 text-[11px] font-bold text-amber-100'
@@ -96,16 +133,49 @@ export default function HomePage() {
 
         {/* 우측: 업로드 카드 */}
         <div className='rounded-2xl border border-stone-200 bg-white p-6 shadow-sm sm:p-7'>
-          <div className='mb-6'>
+          {/* 모드 선택 토글 */}
+          <div className='mb-5 flex rounded-lg border border-stone-200 bg-stone-50 p-1'>
+            {(['auto', 'custom'] as const).map(m => (
+              <button
+                key={m}
+                type='button'
+                onClick={() => { setMode(m); setCustomError('') }}
+                className={cn(
+                  'flex-1 rounded-md py-2 text-sm font-medium transition-all',
+                  mode === m
+                    ? 'bg-white text-stone-900 shadow-sm'
+                    : 'text-stone-500 hover:text-stone-700',
+                )}
+              >
+                {m === 'auto' ? 'AI 자동 추천' : '직접 입력'}
+              </button>
+            ))}
+          </div>
+
+          <div className='mb-5'>
             <h2
               className='text-xl font-semibold text-stone-900'
               style={{ fontFamily: 'var(--font-serif)' }}
             >
               도면 업로드
             </h2>
-            <p className='mt-1.5 text-sm text-stone-400'>공급면적과 도면 이미지를 입력해 주세요.</p>
+            <p className='mt-1.5 text-sm text-stone-400'>
+              {mode === 'auto'
+                ? '공급면적과 도면 이미지를 입력해 주세요.'
+                : '도면 + 원하는 분위기를 함께 입력해 주세요.'}
+            </p>
           </div>
+
           <FloorPlanUploader onSubmit={handleUpload} onBeforeFileSelect={ensureLoggedIn} />
+
+          {mode === 'custom' && (
+            <div className='mt-5 border-t border-stone-100 pt-5'>
+              <CustomToneInput value={customInput} onChange={setCustomInput} />
+              {customError && (
+                <p className='mt-2 text-xs text-red-500'>{customError}</p>
+              )}
+            </div>
+          )}
         </div>
 
       </div>

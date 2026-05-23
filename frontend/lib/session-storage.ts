@@ -1,10 +1,19 @@
 import type { AnalyzeResponse, RenderResponse, ToneCandidateOut } from '@/types/api'
 
+export type ToneMode = 'auto' | 'custom'
+
+export interface CustomInput {
+  userText: string
+  moodChips: string[]
+}
+
 const KEYS = {
   uploadBase64: 'upload:file:base64',
   uploadName: 'upload:file:name',
   uploadType: 'upload:file:type',
   uploadFloorArea: 'upload:floorArea',
+  mode: 'tone:mode',
+  customInput: 'tone:custom_input',
   analyze: (sessionId: string) => `analyze:${sessionId}`,
   tone: (sessionId: string) => `tone:${sessionId}`,
   renderResult: (resultId: string) => `render:${resultId}`,
@@ -31,6 +40,31 @@ export const uploadStorage = {
     sessionStorage.removeItem(KEYS.uploadName)
     sessionStorage.removeItem(KEYS.uploadType)
     sessionStorage.removeItem(KEYS.uploadFloorArea)
+  },
+}
+
+export const modeStorage = {
+  set(mode: ToneMode) {
+    sessionStorage.setItem(KEYS.mode, mode)
+  },
+  get(): ToneMode {
+    return (sessionStorage.getItem(KEYS.mode) as ToneMode) ?? 'auto'
+  },
+  clear() {
+    sessionStorage.removeItem(KEYS.mode)
+  },
+}
+
+export const customInputStorage = {
+  set(input: CustomInput) {
+    sessionStorage.setItem(KEYS.customInput, JSON.stringify(input))
+  },
+  get(): CustomInput | null {
+    const raw = sessionStorage.getItem(KEYS.customInput)
+    return raw ? (JSON.parse(raw) as CustomInput) : null
+  },
+  clear() {
+    sessionStorage.removeItem(KEYS.customInput)
   },
 }
 

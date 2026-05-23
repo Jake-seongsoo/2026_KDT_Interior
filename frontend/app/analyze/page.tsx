@@ -3,14 +3,21 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AuthRequiredError, postAnalyze } from '@/lib/api'
+import { AuthRequiredError, postAnalyze, postAnalyzeCustom } from '@/lib/api'
+import { modeStorage, customInputStorage } from '@/lib/session-storage'
 import { StepProgress } from '@/components/common/StepProgress'
 import { Button } from '@/components/ui/button'
 
-const STEPS = [
+const AUTO_STEPS = [
   '도면 업로드 중',
   'Claude Vision으로 방 구성 분석 중',
   '2026 트렌드 기반 톤 후보 생성 중',
+]
+
+const CUSTOM_STEPS = [
+  '도면 업로드 중',
+  'Claude Vision으로 방 구성 분석 중',
+  '입력하신 분위기로 톤 변형 생성 중',
 ]
 const STEP_ESTIMATES_SECONDS = [3, 12, 55]
 
@@ -19,6 +26,7 @@ export default function AnalyzePage() {
   const [stepIdx, setStepIdx] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [elapsed, setElapsed] = useState(0)
+  const [isCustomMode, setIsCustomMode] = useState(false)
   const called = useRef(false)
 
   useEffect(() => {
@@ -37,12 +45,15 @@ export default function AnalyzePage() {
         const name = sessionStorage.getItem('upload:file:name') ?? 'floorplan.jpg'
         const type = sessionStorage.getItem('upload:file:type') ?? 'image/jpeg'
         const floorArea = Number(sessionStorage.getItem('upload:floorArea') ?? '30')
+        const mode = modeStorage.get()
+        const customData = mode === 'custom' ? customInputStorage.get() : null
 
         if (!base64) {
           router.replace('/')
           return
         }
 
+        setIsCustomMode(mode === 'custom')
         setStepIdx(0)
         const res = await fetch(base64)
         const blob = await res.blob()
@@ -50,7 +61,13 @@ export default function AnalyzePage() {
 
         setStepIdx(1)
         trendStepTimer = window.setTimeout(() => setStepIdx(2), STEP_ESTIMATES_SECONDS[1] * 1000)
-        const result = await postAnalyze(file, floorArea)
+
+        let result
+        if (mode === 'custom' && customData) {
+          result = await postAnalyzeCustom(file, floorArea, customData.userText, customData.moodChips)
+        } else {
+          result = await postAnalyze(file, floorArea)
+        }
 
         sessionStorage.setItem(`analyze:${result.session_id}`, JSON.stringify(result))
 
@@ -58,8 +75,10 @@ export default function AnalyzePage() {
         sessionStorage.removeItem('upload:file:name')
         sessionStorage.removeItem('upload:file:type')
         sessionStorage.removeItem('upload:floorArea')
+        modeStorage.clear()
+        customInputStorage.clear()
 
-        setStepIdx(STEPS.length)
+        setStepIdx((mode === 'custom' ? CUSTOM_STEPS : AUTO_STEPS).length)
         await new Promise((resolve) => setTimeout(resolve, 600))
         router.push(`/tones/${result.session_id}`)
       } catch (e) {
@@ -76,6 +95,7 @@ export default function AnalyzePage() {
     run()
   }, [router])
 
+  const STEPS = isCustomMode ? CUSTOM_STEPS : AUTO_STEPS
   const steps = STEPS.map((label, i) => ({
     label,
     done: i < stepIdx,
