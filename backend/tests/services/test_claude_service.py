@@ -295,6 +295,130 @@ class TestBuildImagenPrompt:
     assert '알파룸' not in prompt
 
 
+# ── generate_custom_tone_variants 테스트 ─────────────────────────────────────
+
+CUSTOM_TONES = [
+  {
+    'tone_index': 1,
+    'name': '안전 베이지',
+    'category': 'natural',
+    'description': '사용자 입력에 충실한 따뜻한 베이지 톤',
+    'reason': '사용자가 원하는 따뜻한 베이지를 벽과 가구에 그대로 반영',
+    'color_palette': [{'name': '웜 베이지', 'hex': '#E8D5B7', 'role': '벽·천장'}],
+    'keywords': ['베이지', '내추럴', '따뜻함', '우드', '러그'],
+  },
+  {
+    'tone_index': 2,
+    'name': '균형 웜톤',
+    'category': 'minimal',
+    'description': '베이지와 2026 트렌드 뉴트럴을 균형 있게 혼합',
+    'reason': '사용자 입력의 웜톤에 트렌디한 뉴트럴 포인트를 추가',
+    'color_palette': [{'name': '아이보리', 'hex': '#F5F0E8', 'role': '벽'}],
+    'keywords': ['뉴트럴', '미니멀', '웜', '린넨', '조명'],
+  },
+  {
+    'tone_index': 3,
+    'name': '대담 콘트라스트',
+    'category': 'japandi',
+    'description': '베이지 기반에 딥 컬러 포인트로 개성 강조',
+    'reason': '사용자의 베이지 선호를 확장해 차콜 포인트로 드라마틱한 대비 연출',
+    'color_palette': [{'name': '차콜', 'hex': '#3C3C3C', 'role': '가구 포인트'}],
+    'keywords': ['자파니즈', '콘트라스트', '딥컬러', '원목', '간접조명'],
+  },
+]
+
+
+@pytest.mark.asyncio
+async def test_custom_variants_returns_three_tones(service):
+  """generate_custom_tone_variants는 3개 톤을 반환한다."""
+  service._client.messages.create = AsyncMock(
+    return_value=_make_mock_response(CUSTOM_TONES)
+  )
+
+  rooms = [{'room_type': '거실'}, {'room_type': '안방'}]
+  tones, _ = await service.generate_custom_tone_variants(
+    rooms, 25.0, '따뜻한 베이지 톤', ['내추럴', '코지']
+  )
+
+  assert len(tones) == 3
+
+
+@pytest.mark.asyncio
+async def test_custom_variants_tone_indices(service):
+  """반환된 톤의 tone_index가 1·2·3이다."""
+  service._client.messages.create = AsyncMock(
+    return_value=_make_mock_response(CUSTOM_TONES)
+  )
+
+  rooms = [{'room_type': '거실'}]
+  tones, _ = await service.generate_custom_tone_variants(
+    rooms, 20.0, '베이지', []
+  )
+
+  indices = [t['tone_index'] for t in tones]
+  assert indices == [1, 2, 3]
+
+
+@pytest.mark.asyncio
+async def test_custom_variants_prompt_includes_user_text(service):
+  """프롬프트에 사용자가 입력한 자유 텍스트가 포함된다."""
+  captured: dict = {}
+
+  async def capture(*args, **kwargs):
+    captured['content'] = kwargs.get('messages', [{}])[0].get('content', '')
+    return _make_mock_response(CUSTOM_TONES)
+
+  service._client.messages.create = capture
+
+  user_text = '따뜻한 베이지에 우드 포인트, 카페 같은 느낌'
+  rooms = [{'room_type': '거실'}]
+  await service.generate_custom_tone_variants(rooms, 20.0, user_text, [])
+
+  assert user_text in captured['content']
+
+
+@pytest.mark.asyncio
+async def test_custom_variants_prompt_includes_mood_chips(service):
+  """프롬프트에 선택된 무드 칩 키워드가 포함된다."""
+  captured: dict = {}
+
+  async def capture(*args, **kwargs):
+    captured['content'] = kwargs.get('messages', [{}])[0].get('content', '')
+    return _make_mock_response(CUSTOM_TONES)
+
+  service._client.messages.create = capture
+
+  chips = ['내추럴', '코지', '북유럽']
+  rooms = [{'room_type': '거실'}]
+  await service.generate_custom_tone_variants(rooms, 20.0, '베이지', chips)
+
+  for chip in chips:
+    assert chip in captured['content'], f'무드 칩 "{chip}"이 프롬프트에 없음'
+
+
+@pytest.mark.asyncio
+async def test_custom_variants_shares_trend_cache(service):
+  """자동 추천 모드와 동일한 캐시 키를 사용해 트렌드 캐시를 공유한다."""
+  # 트렌드 캐시에 데이터 미리 삽입
+  trend_cache['tone-trend:2026'] = ['2026 트렌드: 자연소재']
+
+  calls: list = []
+
+  async def capture(*args, **kwargs):
+    calls.append(kwargs)
+    return _make_mock_response(CUSTOM_TONES)
+
+  service._client.messages.create = capture
+
+  rooms = [{'room_type': '거실'}]
+  _, snapshot = await service.generate_custom_tone_variants(rooms, 20.0, '베이지', [])
+
+  # 캐시 히트 → Web Search 미호출
+  assert snapshot['cache_hit'] is True
+  # tools가 빈 리스트로 호출됐는지 확인
+  assert calls[0].get('tools', []) == []
+
+
 # ── generate_furniture_queries 빈 텍스트 처리 테스트 ────────────────────────
 
 class TestGenerateFurnitureQueriesEmptyResponse:

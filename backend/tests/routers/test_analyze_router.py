@@ -1,8 +1,11 @@
 """analyze 라우터 단위 테스트."""
 import uuid
-import pytest
+from unittest.mock import MagicMock
 
-from routers.analyze import _to_analyze_response
+import pytest
+from fastapi import HTTPException
+
+from routers.analyze import _to_analyze_response, _validate_file
 
 SESS = str(uuid.uuid4())
 R1 = str(uuid.uuid4())
@@ -76,3 +79,29 @@ class TestToAnalyzeResponse:
     sess = str(uuid.uuid4())
     res = _to_analyze_response(sess, [], [])
     assert str(res.session_id) == sess
+
+
+# ── _validate_file 테스트 ────────────────────────────────────────────────────
+
+class TestValidateFile:
+  def _make_file(self, content_type: str) -> MagicMock:
+    f = MagicMock()
+    f.content_type = content_type
+    return f
+
+  def test_valid_jpeg_passes(self):
+    _validate_file(self._make_file('image/jpeg'), b'x' * 100)
+
+  def test_valid_png_passes(self):
+    _validate_file(self._make_file('image/png'), b'x' * 100)
+
+  def test_invalid_content_type_raises_415(self):
+    with pytest.raises(HTTPException) as exc:
+      _validate_file(self._make_file('image/gif'), b'x')
+    assert exc.value.status_code == 415
+
+  def test_file_too_large_raises_413(self):
+    large_data = b'x' * (5 * 1024 * 1024 + 1)
+    with pytest.raises(HTTPException) as exc:
+      _validate_file(self._make_file('image/jpeg'), large_data)
+    assert exc.value.status_code == 413
