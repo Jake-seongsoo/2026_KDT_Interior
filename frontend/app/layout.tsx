@@ -3,7 +3,7 @@ import './globals.css'
 import { Header } from '@/components/common/Header'
 
 export const metadata: Metadata = {
-  title: 'AI 인테리어 추천',
+  title: 'AI Interior — 도면 기반 인테리어 추천',
   description: '도면 업로드만으로 AI가 제안하는 인테리어 톤과 방별 연출안',
 }
 
@@ -14,6 +14,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang='ko'>
+      <head>
+        <link rel='preconnect' href='https://fonts.googleapis.com' />
+        <link rel='preconnect' href='https://fonts.gstatic.com' crossOrigin='' />
+        <link
+          href='https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap'
+          rel='stylesheet'
+        />
+      </head>
       <body className='min-h-screen antialiased'>
         <Header />
         <main>{children}</main>

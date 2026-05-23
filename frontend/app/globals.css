@@ -1,21 +1,33 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-brand-50: #f0fdfa;
-  --color-brand-100: #ccfbf1;
-  --color-brand-200: #99f6e4;
-  --color-brand-300: #5eead4;
-  --color-brand-400: #2dd4bf;
-  --color-brand-500: #14b8a6;
-  --color-brand-600: #0d9488;
-  --color-brand-700: #0f766e;
-  --color-brand-800: #115e59;
-  --color-brand-900: #134e4a;
+  /* Warm oak/amber accent (replaces teal brand) */
+  --color-brand-50: #fefce8;
+  --color-brand-100: #fef3c7;
+  --color-brand-200: #fde68a;
+  --color-brand-300: #fcd34d;
+  --color-brand-400: #fbbf24;
+  --color-brand-500: #f59e0b;
+  --color-brand-600: #d97706;
+  --color-brand-700: #b45309;
+  --color-brand-800: #92400e;
+  --color-brand-900: #78350f;
+
+  /* Custom warm palette */
+  --color-ivory: #F5EFE5;
+  --color-cream: #EDE6D8;
+  --color-sand: #D6CABC;
+  --color-oak: #B07540;
+  --color-oak-light: #E8D4B4;
+  --color-oak-dark: #8A5428;
+
+  /* Serif font family — Korean + fallback */
+  --font-serif: 'Noto Serif KR', 'Apple Myungjo', 'Nanum Myeongjo', Georgia, serif;
 }
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #F5EFE5;
+  --foreground: #1C1917;
 }
 
 * {
@@ -29,11 +41,11 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Pretendard', 'Inter', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   letter-spacing: 0;
 }
 
 ::selection {
-  background: #99f6e4;
-  color: #0f172a;
+  background: #fde68a;
+  color: #1c1917;
 }

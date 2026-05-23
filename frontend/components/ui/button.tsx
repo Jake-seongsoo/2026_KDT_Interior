@@ -12,15 +12,15 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    'bg-slate-950 text-white shadow-sm hover:bg-slate-800 focus-visible:ring-slate-400 disabled:bg-slate-300 disabled:text-slate-500',
+    'bg-stone-900 text-white shadow-sm hover:bg-stone-700 focus-visible:ring-stone-400 disabled:bg-stone-300 disabled:text-stone-500',
   secondary:
-    'bg-teal-600 text-white shadow-sm hover:bg-teal-500 focus-visible:ring-teal-300 disabled:bg-slate-300 disabled:text-slate-500',
+    'bg-amber-700 text-white shadow-sm hover:bg-amber-600 focus-visible:ring-amber-300 disabled:bg-stone-300 disabled:text-stone-500',
   outline:
-    'border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 focus-visible:ring-slate-300',
+    'border border-stone-200 bg-white text-stone-700 shadow-sm hover:border-stone-300 hover:bg-stone-50 focus-visible:ring-stone-300',
   ghost:
-    'text-slate-600 hover:bg-slate-100 hover:text-slate-950 focus-visible:ring-slate-300',
+    'text-stone-600 hover:bg-stone-100 hover:text-stone-950 focus-visible:ring-stone-300',
   danger:
-    'bg-red-600 text-white shadow-sm hover:bg-red-500 focus-visible:ring-red-300 disabled:bg-slate-300',
+    'bg-red-600 text-white shadow-sm hover:bg-red-500 focus-visible:ring-red-300 disabled:bg-stone-300',
 }
 
 const sizes: Record<ButtonSize, string> = {

@@ -4,10 +4,10 @@ import { cn } from '@/lib/utils'
 type BadgeVariant = 'default' | 'muted' | 'success' | 'warning'
 
 const variants: Record<BadgeVariant, string> = {
-  default: 'border-slate-200 bg-slate-950 text-white',
-  muted: 'border-slate-200 bg-slate-100 text-slate-700',
-  success: 'border-teal-200 bg-teal-50 text-teal-700',
-  warning: 'border-amber-200 bg-amber-50 text-amber-700',
+  default: 'border-stone-900 bg-stone-900 text-white',
+  muted: 'border-stone-200 bg-stone-100 text-stone-600',
+  success: 'border-amber-200 bg-amber-50 text-amber-800',
+  warning: 'border-amber-300 bg-amber-100 text-amber-800',
 }
 
 export function Badge({
@@ -18,7 +18,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex h-6 items-center rounded-full border px-2.5 text-xs font-medium',
+        'inline-flex h-6 items-center rounded-full border px-2.5 text-xs font-medium tracking-wide',
         variants[variant],
         className,
       )}

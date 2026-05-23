@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { AuthRequiredError, postAnalyze } from '@/lib/api'
 import { StepProgress } from '@/components/common/StepProgress'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 
 const STEPS = [
   '도면 업로드 중',
@@ -60,7 +59,6 @@ export default function AnalyzePage() {
         sessionStorage.removeItem('upload:file:type')
         sessionStorage.removeItem('upload:floorArea')
 
-        // 로딩바 100% 완료 상태를 잠깐 보여준 후 이동
         setStepIdx(STEPS.length)
         await new Promise((resolve) => setTimeout(resolve, 600))
         router.push(`/tones/${result.session_id}`)
@@ -85,27 +83,56 @@ export default function AnalyzePage() {
   }))
 
   return (
-    <div className='flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-10'>
-      <Card className='w-full max-w-md'>
-        <CardContent className='space-y-8 p-6 sm:p-8'>
-          <div className='space-y-2 text-center'>
-            <p className='text-xs font-semibold uppercase tracking-[0.18em] text-teal-600'>Analyzing</p>
-            <h1 className='text-2xl font-bold text-slate-950'>도면을 분석하고 있습니다</h1>
-            <p className='text-sm text-slate-500'>보통 10~15초 정도 소요됩니다.</p>
+    <div className='flex min-h-[calc(100vh-4rem)] items-center justify-center bg-stone-950 px-4 py-10'>
+      <div className='w-full max-w-md'>
+        {/* 헤더 */}
+        <div className='mb-10 text-center'>
+          <div className='mb-4 flex justify-center gap-1.5'>
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className='h-1.5 w-1.5 rounded-full bg-amber-500'
+                style={{
+                  animationName: 'pulse',
+                  animationDuration: '1.5s',
+                  animationDelay: `${i * 0.2}s`,
+                  animationIterationCount: 'infinite',
+                  animationTimingFunction: 'ease-in-out',
+                  opacity: 0.6,
+                }}
+              />
+            ))}
           </div>
+          <p className='mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-600'>
+            Analyzing
+          </p>
+          <h1
+            className='text-3xl font-bold text-stone-100'
+            style={{ fontFamily: 'var(--font-serif)' }}
+          >
+            도면을 분석하고 있습니다
+          </h1>
+          <p className='mt-3 text-sm text-stone-500'>보통 10~15초 정도 소요됩니다.</p>
+        </div>
 
-          {error ? (
-            <div className='space-y-4'>
-              <p className='rounded-lg border border-red-100 bg-red-50 p-4 text-sm text-red-700'>{error}</p>
-              <Button asChild className='w-full'>
-                <Link href='/'>다시 시도</Link>
-              </Button>
-            </div>
-          ) : (
-            <StepProgress steps={steps} estimatedSeconds={STEP_ESTIMATES_SECONDS} elapsedSeconds={elapsed} />
-          )}
-        </CardContent>
-      </Card>
+        {error ? (
+          <div className='space-y-4'>
+            <p className='rounded-xl border border-red-900/30 bg-red-950/40 p-4 text-sm text-red-300'>
+              {error}
+            </p>
+            <Button asChild className='w-full bg-stone-700 text-white hover:bg-stone-600'>
+              <Link href='/'>다시 시도</Link>
+            </Button>
+          </div>
+        ) : (
+          <StepProgress
+            steps={steps}
+            estimatedSeconds={STEP_ESTIMATES_SECONDS}
+            elapsedSeconds={elapsed}
+            dark
+          />
+        )}
+      </div>
     </div>
   )
 }

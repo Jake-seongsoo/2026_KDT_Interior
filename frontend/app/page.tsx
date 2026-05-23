@@ -1,10 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import { FloorPlanUploader } from '@/components/upload/FloorPlanUploader'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 
 export default function HomePage() {
@@ -41,41 +38,76 @@ export default function HomePage() {
   }
 
   return (
-    <div className='min-h-[calc(100vh-4rem)] bg-[radial-gradient(circle_at_top_left,#ccfbf1,transparent_32rem),linear-gradient(180deg,#ffffff,#f8fafc)]'>
-      <div className='mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_440px] lg:py-16'>
-        <section className='flex flex-col justify-center'>
-          <Badge variant='success' className='mb-5 w-fit'>
+    <div className='min-h-[calc(100vh-4rem)] bg-[#F5EFE5]'>
+      <div className='mx-auto grid max-w-6xl gap-12 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_420px] lg:py-20 lg:gap-16 lg:items-start'>
+
+        {/* 좌측: 헤드라인 + 설명 */}
+        <section className='lg:pt-4'>
+          <p
+            className='mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700'
+          >
             2026 인테리어 톤 추천
-          </Badge>
-          <h1 className='max-w-2xl text-4xl font-bold leading-tight tracking-tight text-slate-950 sm:text-5xl'>
-            도면 한 장으로 방별 인테리어 방향을 빠르게 잡습니다.
-          </h1>
-          <p className='mt-5 max-w-xl text-base leading-7 text-slate-600'>
-            AI가 평면도를 읽고 공간 구성을 파악한 뒤, 어울리는 톤과 방별 연출안, 추천 상품 후보까지 한 흐름으로 제안합니다.
           </p>
-          <div className='mt-8 grid gap-3 text-sm text-slate-700 sm:grid-cols-3'>
-            {['방 구성 분석', '톤 팔레트 추천', '방별 렌더 제안'].map((item) => (
-              <div key={item} className='flex items-center gap-2'>
-                <CheckCircle2 className='h-4 w-4 text-teal-600' />
-                <span>{item}</span>
+
+          <h1
+            className='text-4xl font-bold leading-[1.2] tracking-tight text-stone-900 sm:text-5xl lg:text-6xl'
+            style={{ fontFamily: 'var(--font-serif)' }}
+          >
+            도면 한 장으로
+            <br />
+            <span className='text-stone-400'>공간의 방향을</span>
+            <br />
+            읽습니다.
+          </h1>
+
+          <p className='mt-6 max-w-lg text-base leading-8 text-stone-500'>
+            AI가 평면도를 분석해 공간 구성을 파악하고, 어울리는 톤과 방별 연출안, 추천 가구까지 한 흐름으로 제안합니다.
+          </p>
+
+          {/* 스텝 표시 */}
+          <div className='mt-10 space-y-4'>
+            {[
+              { step: '01', label: '도면 업로드', desc: '분양 도면이나 네이버 부동산 캡처' },
+              { step: '02', label: '방 구성 분석', desc: 'Claude Vision으로 공간 인식' },
+              { step: '03', label: '인테리어 톤 선택', desc: '2026 트렌드 기반 6가지 팔레트' },
+              { step: '04', label: '방별 제안 확인', desc: 'Imagen 렌더링 + 이케아 추천 상품' },
+            ].map(({ step, label, desc }) => (
+              <div key={step} className='flex items-start gap-4'>
+                <span
+                  className='mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-stone-900 text-[11px] font-bold text-amber-100'
+                  style={{ fontFamily: 'var(--font-serif)' }}
+                >
+                  {step}
+                </span>
+                <div>
+                  <p className='text-sm font-semibold text-stone-800'>{label}</p>
+                  <p className='text-xs text-stone-400 mt-0.5'>{desc}</p>
+                </div>
               </div>
             ))}
           </div>
-          <div className='mt-10 flex items-center gap-2 text-sm font-medium text-slate-500'>
-            <span>도면을 올리면 바로 분석 단계로 이동합니다.</span>
-            <ArrowRight className='h-4 w-4' />
-          </div>
+
+          <div className='mt-10 h-px w-24 bg-stone-300' />
+
+          <p className='mt-6 text-xs leading-6 text-stone-400 max-w-sm'>
+            아파트 분양 도면·네이버 부동산 캡처에 최적화. 방 경계와 이름이 선명한 이미지를 사용하세요.
+          </p>
         </section>
 
-        <Card className='self-start'>
-          <CardContent className='p-5 sm:p-6'>
-            <div className='mb-5'>
-              <h2 className='text-lg font-bold text-slate-950'>도면 업로드</h2>
-              <p className='mt-1 text-sm text-slate-500'>공급면적과 도면 이미지를 입력해 주세요.</p>
-            </div>
-            <FloorPlanUploader onSubmit={handleUpload} onBeforeFileSelect={ensureLoggedIn} />
-          </CardContent>
-        </Card>
+        {/* 우측: 업로드 카드 */}
+        <div className='rounded-2xl border border-stone-200 bg-white p-6 shadow-sm sm:p-7'>
+          <div className='mb-6'>
+            <h2
+              className='text-xl font-semibold text-stone-900'
+              style={{ fontFamily: 'var(--font-serif)' }}
+            >
+              도면 업로드
+            </h2>
+            <p className='mt-1.5 text-sm text-stone-400'>공급면적과 도면 이미지를 입력해 주세요.</p>
+          </div>
+          <FloorPlanUploader onSubmit={handleUpload} onBeforeFileSelect={ensureLoggedIn} />
+        </div>
+
       </div>
     </div>
   )

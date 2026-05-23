@@ -48,7 +48,7 @@ export function LoginButton() {
   if (user) {
     return (
       <div className='flex items-center gap-2'>
-        <span className='hidden max-w-32 truncate text-sm text-slate-500 sm:block'>
+        <span className='hidden max-w-32 truncate text-sm text-stone-500 sm:block'>
           {user.email?.split('@')[0]}
         </span>
         <Button onClick={handleLogout} variant='outline' size='sm'>

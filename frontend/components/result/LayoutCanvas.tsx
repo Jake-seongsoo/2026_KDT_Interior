@@ -9,10 +9,10 @@ const CANVAS_W = 600
 const CANVAS_H = 400
 
 const ROOM_PALETTES = [
-  { bg: '#EFF6FF', border: '#93C5FD', text: '#1D4ED8' }, // 파란
-  { bg: '#F0FDF4', border: '#86EFAC', text: '#15803D' }, // 초록
-  { bg: '#FFFBEB', border: '#FCD34D', text: '#B45309' }, // 노란
-  { bg: '#FDF2F8', border: '#F9A8D4', text: '#9D174D' }, // 분홍
+  { bg: '#FEF9EE', border: '#FDE68A', text: '#92400E' },
+  { bg: '#F0FDF4', border: '#86EFAC', text: '#15803D' },
+  { bg: '#F5F3FF', border: '#C4B5FD', text: '#5B21B6' },
+  { bg: '#FFF1F2', border: '#FECDD3', text: '#9F1239' },
 ]
 
 function roomIcon(roomType: string) {
@@ -53,10 +53,10 @@ export function LayoutCanvas({ rooms, activeRoomId, onRoomClick }: LayoutCanvasP
   return (
     <Card className='overflow-hidden'>
       <CardHeader className='flex flex-row items-center gap-2 pb-2'>
-        <MapIcon className='h-4 w-4 shrink-0 text-teal-600' />
+        <MapIcon className='h-4 w-4 shrink-0 text-amber-600' />
         <div>
-          <h2 className='text-sm font-bold text-slate-950'>2D 공간 배치도</h2>
-          <p className='text-xs text-slate-400'>
+          <h2 className='text-sm font-semibold text-stone-900'>2D 공간 배치도</h2>
+          <p className='text-xs text-stone-400'>
             {hasArea && totalArea > 0
               ? `총 면적 ${totalArea.toFixed(1)}㎡ · 사각형 크기는 실제 면적 비율`
               : '공간 구성 시각화'}
@@ -65,7 +65,7 @@ export function LayoutCanvas({ rooms, activeRoomId, onRoomClick }: LayoutCanvasP
       </CardHeader>
       <CardContent>
         <div
-          className='relative w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-50'
+          className='relative w-full overflow-hidden rounded-xl border border-stone-200 bg-stone-50'
           style={{ aspectRatio: `${CANVAS_W}/${CANVAS_H}` }}
         >
           {rooms.map((room, i) => {
@@ -80,7 +80,6 @@ export function LayoutCanvas({ rooms, activeRoomId, onRoomClick }: LayoutCanvasP
                 ? Math.round((room.area_sqm / totalArea) * 100)
                 : null
 
-            // 셀 크기에 따라 폰트 크기를 동적 조정
             const minDim = Math.min(rect.w, rect.h)
             const iconSize = Math.max(14, Math.min(minDim * 0.14, 28))
             const nameSize = Math.max(11, Math.min(minDim * 0.1, 16))
@@ -98,8 +97,8 @@ export function LayoutCanvas({ rooms, activeRoomId, onRoomClick }: LayoutCanvasP
                   width: `${(rect.w / CANVAS_W) * 100}%`,
                   height: `${(rect.h / CANVAS_H) * 100}%`,
                   backgroundColor: palette.bg,
-                  border: `2px solid ${isActive ? '#0D9488' : palette.border}`,
-                  outline: isActive ? '2px solid #0D9488' : 'none',
+                  border: `2px solid ${isActive ? '#B45309' : palette.border}`,
+                  outline: isActive ? '2px solid #B45309' : 'none',
                   outlineOffset: '-3px',
                   cursor: onRoomClick ? 'pointer' : 'default',
                 }}
@@ -115,7 +114,7 @@ export function LayoutCanvas({ rooms, activeRoomId, onRoomClick }: LayoutCanvasP
                 </span>
                 {room.area_sqm && (
                   <span
-                    className='overflow-hidden text-ellipsis whitespace-nowrap text-slate-500 leading-tight'
+                    className='overflow-hidden text-ellipsis whitespace-nowrap text-stone-500 leading-tight'
                     style={{ fontSize: subSize, maxWidth: '90%' }}
                   >
                     {room.area_sqm.toFixed(1)}㎡{pct !== null ? ` (${pct}%)` : ''}
@@ -126,7 +125,7 @@ export function LayoutCanvas({ rooms, activeRoomId, onRoomClick }: LayoutCanvasP
           })}
         </div>
         {onRoomClick && (
-          <p className='mt-2 text-center text-xs text-slate-400'>
+          <p className='mt-2 text-center text-xs text-stone-400'>
             방을 클릭하면 아래 제안으로 이동합니다
           </p>
         )}
