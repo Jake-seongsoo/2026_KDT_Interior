@@ -522,8 +522,11 @@ class ClaudeService:
       if hint_text:
         balcony_hint = f', {hint_text}'
 
+    # 방 면적 → 공간감 힌트 (Imagen이 방 크기를 왜곡하지 않도록)
+    size_hint = self._build_size_hint(room.get('area_sqm'))
+
     base = (
-      f'Korean apartment {room_en} interior design, '
+      f'Korean apartment {size_hint}{room_en} interior design, '
       f'{space_hint}'
       f'{tone.get("name", "")} style, '
       f'{keywords}, '
@@ -534,6 +537,26 @@ class ClaudeService:
 
     appliance_hint = self._build_appliance_hint(room_type, refinement)
     return base + self._build_refinement_hint(refinement) + appliance_hint
+
+  @staticmethod
+  def _build_size_hint(area_sqm: float | None) -> str:
+    """면적(㎡)을 Imagen이 이해할 수 있는 공간감 형용사 + 수치로 변환한다.
+
+    면적 미제공 시 빈 문자열 반환 (Imagen 기본 공간감에 맡김).
+    """
+    if not area_sqm:
+      return ''
+    if area_sqm < 8:
+      adj = 'very compact'
+    elif area_sqm < 12:
+      adj = 'compact'
+    elif area_sqm < 20:
+      adj = 'standard-sized'
+    elif area_sqm < 30:
+      adj = 'large'
+    else:
+      adj = 'spacious'
+    return f'{adj} {area_sqm:.1f}sqm '
 
   @staticmethod
   def _build_appliance_hint(room_type: str, refinement: dict | None) -> str:
