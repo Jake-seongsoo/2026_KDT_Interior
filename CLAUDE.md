@@ -169,13 +169,14 @@ models/       ← Pydantic 스키마 (schemas.py 단일 파일)
 - AI 생성 이미지 고지 문구 (UI 라벨 + API 응답 disclaimer)
 - 워터마크는 UI 라벨로 고지 의무 충족 — 이미지 파일 임베드 불필요로 결정
 
-### Phase 2 — 고도화 (2026.05)
-- 방 정보 수정 UI (방 이름·개수 보정), 톤 재선택
-- 방 면적(area_sqm) UI 표시
-- 예산 추정 기능(fc8): `UNIT_COSTS` 상수 + 지역 보정계수 4단계(서울·수도권·지방광역시·기타) → Phase 3 이월
-- 분석 기록 조회 → Phase 3 이월
+### Phase 2 — 고도화 (완료, 2026.05)
+- 톤 재선택 (F006): 결과 페이지 "다른 톤" 버튼 → `/tones/[sessionId]` 복귀
+- 방 면적(area_sqm) UI 표시: RoomInfoCard + LayoutCanvas SVG 배치도
 
-### Phase 3 — 완성 (2026.06)
+### Phase 3 — 완성 (진행 중, 2026.06)
+- F007 정밀화 맞춤 렌더링 ✅ (2026-05-23): 결과 페이지 "정밀화" 버튼 → RefinementModal(shadcn Dialog) → `/render` 재호출. 정밀화 파라미터: budget_10k_won, family_type, style_keywords(최대3), keep_appliances. DB: recommendation_results.refinement_params jsonb 컬럼 추가 (0003_add_refinement_params.sql). shadcn UI 정식 도입(components.json, dialog, label).
+- F008 공유 링크 — 미구현 (DB 테이블만 존재)
+- F011 분석 기록 조회 — 미구현
 - fc10: Vision 정확도 80%+ 달성 후 벽 분류 기능 (SNS 이미지 → 내 방 적용 가능 여부)
 
 ## DB 스키마 주요 테이블
