@@ -16,7 +16,7 @@ export default function HomePage() {
     userText: '',
     moodChips: [],
   })
-  const [customError, setCustomError] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   const ensureLoggedIn = async () => {
     const supabase = createClient()
@@ -35,12 +35,6 @@ export default function HomePage() {
     if (!(await ensureLoggedIn())) {
       return
     }
-
-    if (mode === 'custom' && !customInput.userText.trim()) {
-      setCustomError('원하는 분위기를 입력해주세요.')
-      return
-    }
-    setCustomError('')
 
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -139,7 +133,7 @@ export default function HomePage() {
               <button
                 key={m}
                 type='button'
-                onClick={() => { setMode(m); setCustomError('') }}
+                onClick={() => setMode(m)}
                 className={cn(
                   'flex-1 rounded-md py-2 text-sm font-medium transition-all',
                   mode === m
@@ -166,13 +160,32 @@ export default function HomePage() {
             </p>
           </div>
 
-          <FloorPlanUploader onSubmit={handleUpload} onBeforeFileSelect={ensureLoggedIn} />
+          <FloorPlanUploader
+            onSubmit={handleUpload}
+            onBeforeFileSelect={ensureLoggedIn}
+            onFileChange={setSelectedFile}
+            formId={mode === 'custom' ? 'upload-form' : undefined}
+            hideSubmit={mode === 'custom'}
+          />
 
           {mode === 'custom' && (
-            <div className='mt-5 border-t border-stone-100 pt-5'>
+            <div className='mt-5 border-t border-stone-100 pt-5 space-y-5'>
               <CustomToneInput value={customInput} onChange={setCustomInput} />
-              {customError && (
-                <p className='mt-2 text-xs text-red-500'>{customError}</p>
+              <button
+                form='upload-form'
+                type='submit'
+                disabled={!selectedFile || !customInput.userText.trim()}
+                className={cn(
+                  'w-full rounded-lg py-3 text-sm font-semibold transition-colors',
+                  (!selectedFile || !customInput.userText.trim())
+                    ? 'cursor-not-allowed bg-stone-200 text-stone-400'
+                    : 'bg-stone-900 text-white hover:bg-stone-700',
+                )}
+              >
+                분석 시작
+              </button>
+              {!customInput.userText.trim() && selectedFile && (
+                <p className='text-center text-xs text-stone-400'>원하는 분위기를 입력해야 분석을 시작할 수 있습니다.</p>
               )}
             </div>
           )}

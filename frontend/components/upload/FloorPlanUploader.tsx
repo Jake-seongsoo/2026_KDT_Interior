@@ -20,10 +20,13 @@ type FormValues = z.infer<typeof schema>
 interface FloorPlanUploaderProps {
   onSubmit: (file: File, floorAreaPyeong: number) => void | Promise<void>
   onBeforeFileSelect?: () => boolean | Promise<boolean>
+  onFileChange?: (file: File | null) => void
   isLoading?: boolean
+  formId?: string
+  hideSubmit?: boolean
 }
 
-export function FloorPlanUploader({ onSubmit, onBeforeFileSelect, isLoading }: FloorPlanUploaderProps) {
+export function FloorPlanUploader({ onSubmit, onBeforeFileSelect, onFileChange, isLoading, formId, hideSubmit }: FloorPlanUploaderProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
@@ -52,6 +55,7 @@ export function FloorPlanUploader({ onSubmit, onBeforeFileSelect, isLoading }: F
     }
     setSelectedFile(file)
     setPreview(URL.createObjectURL(file))
+    onFileChange?.(file)
   }
 
   const handleDrop = async (e: React.DragEvent) => {
@@ -75,7 +79,7 @@ export function FloorPlanUploader({ onSubmit, onBeforeFileSelect, isLoading }: F
   }
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className='space-y-5'>
+    <form id={formId} onSubmit={handleSubmit(onFormSubmit)} className='space-y-5'>
       <div
         onDrop={handleDrop}
         onDragOver={(e) => {
@@ -161,14 +165,16 @@ export function FloorPlanUploader({ onSubmit, onBeforeFileSelect, isLoading }: F
         업로드한 도면 이미지는 AI 분석 목적으로만 사용되며 30일 후 자동 삭제됩니다.
       </p>
 
-      <Button
-        type='submit'
-        disabled={!selectedFile || isLoading}
-        className='w-full'
-        size='lg'
-      >
-        {isLoading ? '분석 중...' : '분석 시작'}
-      </Button>
+      {!hideSubmit && (
+        <Button
+          type='submit'
+          disabled={!selectedFile || isLoading}
+          className='w-full'
+          size='lg'
+        >
+          {isLoading ? '분석 중...' : '분석 시작'}
+        </Button>
+      )}
     </form>
   )
 }
