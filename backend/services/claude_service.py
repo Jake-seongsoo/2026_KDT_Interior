@@ -311,6 +311,105 @@ class ClaudeService:
     logger.info('톤 후보 %d개 생성 완료 (cache_hit=%s)', len(tones), snapshot['cache_hit'])
     return tones, snapshot
 
+  async def generate_custom_tone_variants(
+    self,
+    rooms: list[dict],
+    floor_area_pyeong: float,
+    user_text: str,
+    mood_chips: list[str],
+    year: int = 2026,
+  ) -> tuple[list[dict], dict]:
+    """사용자 입력(자유 텍스트 + 무드 칩)을 기반으로 톤 변형 3개를 생성한다.
+
+    tone_index: 1=안전(입력 충실), 2=중립(균형), 3=대담(확장·대비)
+    트렌드 캐시는 자동 추천 모드와 동일한 키로 공유한다.
+    """
+    cache_key = f'tone-trend:{year}'
+    cached_trend = trend_cache.get(cache_key)
+
+    if cached_trend:
+      tools = []
+      trend_context = f'2026년 인테리어 트렌드 요약:\n{json.dumps(cached_trend, ensure_ascii=False)}'
+      logger.info('트렌드 캐시 히트: %s', cache_key)
+    else:
+      tools = [{'name': 'web_search', 'type': 'web_search_20250305'}]
+      trend_context = f'{year}년 한국 인테리어 트렌드를 웹에서 검색해 반영해주세요.'
+      logger.info('트렌드 캐시 미스: Web Search 호출')
+
+    room_summary = ', '.join(r.get('room_type', '') for r in rooms)
+    chips_text = ', '.join(mood_chips) if mood_chips else '(없음)'
+
+    prompt = f'''사용자가 원하는 인테리어 스타일을 기반으로 톤 변형 3개를 생성해주세요.
+
+도면 정보:
+- 공급면적: {floor_area_pyeong}평
+- 방 구성: {room_summary}
+
+사용자 입력:
+- 원하는 분위기: {user_text}
+- 선택한 무드 키워드: {chips_text}
+
+{trend_context}
+
+반드시 아래 JSON 형식으로만 응답하세요 (JSON 코드 블록 외 텍스트 금지):
+
+```json
+{{
+  "tones": [
+    {{
+      "tone_index": 1,
+      "name": "톤 이름",
+      "category": "카테고리",
+      "description": "공간 분위기 설명",
+      "reason": "사용자 입력을 어떻게 반영했는지 1~2문장",
+      "color_palette": [
+        {{"name": "컬러 이름", "hex": "#F7F3EA", "role": "벽·천장"}},
+        {{"name": "컬러 이름", "hex": "#4A4A4A", "role": "가구"}}
+      ],
+      "keywords": ["키워드1", "키워드2", "키워드3"]
+    }}
+  ],
+  "trend_summary": []
+}}
+```
+
+규칙:
+- tone_index 1: 안전 — 사용자 입력을 가장 충실히 반영, 무난하고 안정적인 해석
+- tone_index 2: 중립 — 사용자 의도와 2026 트렌드를 균형 있게 혼합
+- tone_index 3: 대담 — 사용자 입력을 확장·재해석하여 콘트라스트와 개성을 강조
+- 3개 톤은 서로 뚜렷이 차별화되어야 함
+- reason 필드에 사용자 입력을 구체적으로 언급하며 어떻게 반영했는지 명시
+- 각 color_palette는 2~4개 컬러
+- keywords는 Imagen 프롬프트에 쓸 단어 3~5개'''
+
+    resp = await self._client.messages.create(
+      model=self._model,
+      max_tokens=3000,
+      messages=[{'role': 'user', 'content': prompt}],
+      tools=tools if tools else [],
+    )
+
+    text = ''
+    for block in resp.content:
+      if hasattr(block, 'text'):
+        text += block.text
+
+    parsed = _parse_json_block(text)
+    tones = parsed.get('tones', [])
+    trend_raw = parsed.get('trend_summary', [])
+
+    if not cached_trend and trend_raw:
+      trend_cache[cache_key] = trend_raw
+
+    snapshot = {
+      'searched_at': _now_iso(),
+      'cache_hit': cached_trend is not None,
+      'trends': trend_raw if not cached_trend else cached_trend,
+    }
+
+    logger.info('커스텀 톤 변형 %d개 생성 완료 (cache_hit=%s)', len(tones), snapshot['cache_hit'])
+    return tones, snapshot
+
   @staticmethod
   def _lookup_room_key(room_type: str, key_map: dict) -> str | None:
     """방 이름으로 딕셔너리 키를 찾는다.
