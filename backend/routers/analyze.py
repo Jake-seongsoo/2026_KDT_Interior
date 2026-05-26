@@ -23,6 +23,7 @@ def _to_analyze_response(
   rooms_data: list[dict],
   tones_data: list[dict],
   warnings: list[str] | None = None,
+  has_reference: bool = False,
 ) -> AnalyzeResponse:
   rooms_out = [
     RoomOut(
@@ -53,6 +54,7 @@ def _to_analyze_response(
     rooms=rooms_out,
     tone_candidates=tones_out,
     warnings=warnings or [],
+    has_reference=has_reference,
   )
 
 
@@ -123,7 +125,8 @@ async def get_analyze_result(
 
   rooms_data = await db.get_rooms_by_session(session_id)
   tones_data = await db.get_tone_candidates_by_session(session_id)
-  return _to_analyze_response(session_id, rooms_data, tones_data)
+  has_reference = bool(session.get('reference_gcs_path'))
+  return _to_analyze_response(session_id, rooms_data, tones_data, has_reference=has_reference)
 
 
 def _validate_file(file: UploadFile, data: bytes) -> None:
@@ -140,13 +143,50 @@ def _validate_file(file: UploadFile, data: bytes) -> None:
     )
 
 
+async def _handle_reference_upload(
+  reference: UploadFile | None,
+  user_id: str,
+  session_id: str,
+  db: SupabaseService,
+  storage: StorageService,
+  claude: ClaudeService,
+) -> dict | None:
+  """레퍼런스 이미지 업로드·Vision 분석·DB 저장을 처리한다.
+
+  reference가 없으면 None 반환(정상 경로). Vision 분석이 실패해도 업로드는 유지하고
+  signature만 None으로 저장 — 톤 생성은 시그니처 없이 진행되어 graceful degrade.
+  """
+  if reference is None:
+    return None
+
+  ref_data = await reference.read()
+  _validate_file(reference, ref_data)
+
+  upload_task = asyncio.to_thread(
+    storage.upload_reference, user_id, session_id, ref_data, reference.content_type
+  )
+  vision_task = claude.analyze_reference_image(ref_data, reference.content_type)
+
+  ref_gcs_path, signature = await asyncio.gather(upload_task, vision_task)
+  await db.update_session_reference(session_id, ref_gcs_path, signature)
+  logger.info(
+    '레퍼런스 처리 완료 (session=%s): gcs=%s signature=%s',
+    session_id, ref_gcs_path, 'OK' if signature else 'FAIL',
+  )
+  return signature
+
+
 @router.post('/analyze', response_model=AnalyzeResponse)
 async def analyze(
   file: UploadFile = File(...),
   floor_area_pyeong: float = Form(..., ge=1.0, le=200.0),
+  reference: UploadFile | None = File(None),
   user: AuthUser = Depends(verify_jwt),
 ) -> AnalyzeResponse:
-  """도면 이미지를 분석해 방 정보와 톤 후보 6개를 반환한다."""
+  """도면 이미지를 분석해 방 정보와 톤 후보 6개를 반환한다.
+
+  reference 이미지가 있으면 톤 6개를 모두 그 분위기로 변주한다.
+  """
   data = await file.read()
   _validate_file(file, data)
 
@@ -158,8 +198,14 @@ async def analyze(
     data, file.content_type, floor_area_pyeong, user.user_id, db, storage, claude
   )
 
+  reference_signature = await _handle_reference_upload(
+    reference, user.user_id, session_id, db, storage, claude
+  )
+
   try:
-    tones_raw, trend_snapshot = await claude.generate_tone_candidates(rooms_data, floor_area_pyeong)
+    tones_raw, trend_snapshot = await claude.generate_tone_candidates(
+      rooms_data, floor_area_pyeong, reference_signature=reference_signature,
+    )
   except Exception as e:
     await db.update_session_status(session_id, 'failed')
     logger.error('톤 생성 실패 (session=%s): %s', session_id, e)
@@ -172,20 +218,32 @@ async def analyze(
   await db.update_session_status(session_id, 'completed', trend_snapshot)
 
   logger.info('분석 완료 (session=%s): 방 %d개, 톤 %d개', session_id, len(rooms_data), len(tones_data))
-  return _to_analyze_response(session_id, rooms_data, tones_data, warnings)
+  return _to_analyze_response(
+    session_id, rooms_data, tones_data, warnings, has_reference=reference is not None,
+  )
 
 
 @router.post('/analyze/custom', response_model=AnalyzeResponse)
 async def analyze_custom(
   file: UploadFile = File(...),
   floor_area_pyeong: float = Form(..., ge=1.0, le=200.0),
-  user_text: str = Form(..., min_length=1, max_length=500),
+  user_text: str = Form('', max_length=500),
   mood_chips: str = Form('[]'),
+  reference: UploadFile | None = File(None),
   user: AuthUser = Depends(verify_jwt),
 ) -> AnalyzeResponse:
-  """사용자 입력(자유 텍스트 + 무드 칩)을 기반으로 톤 변형 3개를 반환한다."""
+  """사용자 입력(자유 텍스트 + 무드 칩)을 기반으로 톤 변형 3개를 반환한다.
+
+  레퍼런스 이미지만 있어도 동작하며, user_text와 reference 둘 다 없으면 400 반환.
+  """
   data = await file.read()
   _validate_file(file, data)
+
+  if not user_text.strip() and reference is None:
+    raise HTTPException(
+      status_code=status.HTTP_400_BAD_REQUEST,
+      detail='원하는 분위기를 입력하거나 레퍼런스 이미지를 추가해주세요.',
+    )
 
   try:
     chips: list[str] = json.loads(mood_chips)
@@ -202,9 +260,14 @@ async def analyze_custom(
     data, file.content_type, floor_area_pyeong, user.user_id, db, storage, claude
   )
 
+  reference_signature = await _handle_reference_upload(
+    reference, user.user_id, session_id, db, storage, claude
+  )
+
   try:
     tones_raw, trend_snapshot = await claude.generate_custom_tone_variants(
-      rooms_data, floor_area_pyeong, user_text, chips
+      rooms_data, floor_area_pyeong, user_text, chips,
+      reference_signature=reference_signature,
     )
   except Exception as e:
     await db.update_session_status(session_id, 'failed')
@@ -218,4 +281,6 @@ async def analyze_custom(
   await db.update_session_status(session_id, 'completed', trend_snapshot)
 
   logger.info('커스텀 분석 완료 (session=%s): 방 %d개, 톤 %d개', session_id, len(rooms_data), len(tones_data))
-  return _to_analyze_response(session_id, rooms_data, tones_data, warnings)
+  return _to_analyze_response(
+    session_id, rooms_data, tones_data, warnings, has_reference=reference is not None,
+  )

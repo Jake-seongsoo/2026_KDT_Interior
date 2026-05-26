@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { Home } from 'lucide-react'
 import { LoginButton } from './LoginButton'
 
 export function Header() {
@@ -29,8 +30,10 @@ export function Header() {
           <Link
             href='/'
             className='inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900'
+            aria-label='홈으로 이동'
           >
-            <span className='hidden sm:inline'>도면 분석</span>
+            <Home size={18} strokeWidth={1.8} />
+            <span className='hidden sm:inline'>홈</span>
           </Link>
           {!isLoginPage && <LoginButton />}
         </nav>

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AuthRequiredError, postAnalyze, postAnalyzeCustom } from '@/lib/api'
-import { modeStorage, customInputStorage } from '@/lib/session-storage'
+import { modeStorage, customInputStorage, referenceStorage, uploadStorage } from '@/lib/session-storage'
 import { useStepFlow } from '@/hooks/useStepFlow'
 import { StepProgress } from '@/components/common/StepProgress'
 import { Button } from '@/components/ui/button'
@@ -47,12 +47,10 @@ export default function AnalyzePage() {
     const run = async () => {
       let trendStepTimer: number | undefined
       try {
-        const base64 = sessionStorage.getItem('upload:file:base64')
-        const name = sessionStorage.getItem('upload:file:name') ?? 'floorplan.jpg'
-        const type = sessionStorage.getItem('upload:file:type') ?? 'image/jpeg'
-        const floorArea = Number(sessionStorage.getItem('upload:floorArea') ?? '30')
+        const { base64, name, type, floorArea } = uploadStorage.load()
         const mode = modeStorage.get()
         const customData = mode === 'custom' ? customInputStorage.get() : null
+        const refData = referenceStorage.load()
 
         if (!base64) {
           router.replace('/')
@@ -61,28 +59,32 @@ export default function AnalyzePage() {
 
         setIsCustomMode(mode === 'custom')
         setStepIdx(0)
-        const res = await fetch(base64)
-        const blob = await res.blob()
+
+        const [blob, refBlob] = await Promise.all([
+          fetch(base64).then(r => r.blob()),
+          refData ? fetch(refData.base64).then(r => r.blob()) : Promise.resolve(null),
+        ])
         const file = new File([blob], name, { type })
+        const referenceFile = refBlob && refData
+          ? new File([refBlob], refData.name, { type: refData.type })
+          : undefined
 
         setStepIdx(1)
         trendStepTimer = window.setTimeout(() => setStepIdx(2), STEP_ESTIMATES_SECONDS[1] * 1000)
 
         let result
         if (mode === 'custom' && customData) {
-          result = await postAnalyzeCustom(file, floorArea, customData.userText, customData.moodChips)
+          result = await postAnalyzeCustom(file, floorArea, customData.userText, customData.moodChips, referenceFile)
         } else {
-          result = await postAnalyze(file, floorArea)
+          result = await postAnalyze(file, floorArea, referenceFile)
         }
 
         sessionStorage.setItem(`analyze:${result.session_id}`, JSON.stringify(result))
 
-        sessionStorage.removeItem('upload:file:base64')
-        sessionStorage.removeItem('upload:file:name')
-        sessionStorage.removeItem('upload:file:type')
-        sessionStorage.removeItem('upload:floorArea')
+        uploadStorage.clear()
         modeStorage.clear()
         customInputStorage.clear()
+        referenceStorage.clear()
 
         await complete(() => router.push(`/tones/${result.session_id}`))
       } catch (e) {

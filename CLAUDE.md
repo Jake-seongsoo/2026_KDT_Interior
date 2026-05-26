@@ -124,8 +124,10 @@ models/       ← Pydantic 스키마 (schemas.py 단일 파일)
 
 ### 렌더링 엔진 결정 사항
 
-- **Vertex AI Imagen 4 단독 사용** — `services/imagen_service.py`
-- Gemini Image(gemini_image_service.py)는 PoC 후 미사용으로 확정. conditioning 기반 품질 개선은 Phase 3 검토.
+- **항상**: Imagen 4 (`imagen-4.0-generate-001`) — 텍스트 전용, 고품질
+- **레퍼런스 있을 때**: Claude Vision이 이미지에서 추출한 시그니처(색상·재질·조명·무드)를 영문 텍스트 힌트로 변환해 Imagen 프롬프트에 추가. 이미지 복사(StyleReferenceImage)가 아닌 분위기 재해석.
+- 분기 로직 없음 — `render_rooms_parallel`은 항상 `render_room`(generate 모델)만 호출. 레퍼런스 특성은 `build_imagen_prompt(reference_signature=...)` 텍스트로 반영
+- Gemini Image(gemini_image_service.py)는 PoC 후 미사용으로 확정.
 - `backend/services/gemini_image_service.py`, `backend/scripts/poc_gemini_conditioning.py`는 삭제 대상
 
 ### 이케아 비공식 API 제약
@@ -160,6 +162,7 @@ models/       ← Pydantic 스키마 (schemas.py 단일 파일)
 ❌ "이 렌더링으로 시공할 수 있습니다"
 ❌ "품절 상품 자동 필터링" (이케아 API가 재고 미제공)
 ❌ "플랫폼은 일체의 책임을 지지 않습니다" (공정위 적발 대상)
+❌ "사진과 똑같이 만들어드립니다" (레퍼런스 이미지 conditioning은 스타일 참고이며 복제·재현 아님)
 ```
 
 ## 구현 로드맵

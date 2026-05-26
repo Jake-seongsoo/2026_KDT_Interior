@@ -20,6 +20,9 @@ _ROOM_EXCLUDED_KEYWORDS: dict[str, set[str]] = {
   '욕실': {'소파', '침대', '식탁', '러그', '커튼', '책상', '소파베드', '쇼파'},
   '주방': {'소파', '침대', '러그'},
   '발코니': {'소파', '침대', '식탁'},
+  '침실': {'식탁', '가스레인지', '조리대', '싱크대', '레인지후드', '주방', '부엌'},
+  '안방': {'식탁', '가스레인지', '조리대', '싱크대', '레인지후드', '주방', '부엌'},
+  '작은방': {'식탁', '가스레인지', '조리대', '싱크대', '레인지후드', '주방', '부엌'},
 }
 
 # 발코니 인접 상태별 Imagen 프롬프트 단서 (비확장/확장형)
@@ -64,9 +67,9 @@ _ROOM_NEGATIVE_HINTS: dict[str, str] = {
   '발코나': 'no sofa, no bed, no dining table',
   # 발코니 인접 거실/침실에 적용: has_adjoining_balcony=true 시 추가 단서로 보강
   '거실': 'no exterior balcony tiles inside room, no outdoor space as living area',
-  '안방': 'no exterior balcony tiles inside room',
-  '침실': 'no exterior balcony tiles inside room',
-  '작은방': 'no exterior balcony tiles inside room',
+  '안방': 'no exterior balcony tiles inside room, no kitchen cabinets, no stove, no cooking appliances, no sink',
+  '침실': 'no exterior balcony tiles inside room, no kitchen cabinets, no stove, no cooking appliances, no sink, no dining table',
+  '작은방': 'no exterior balcony tiles inside room, no kitchen cabinets, no stove, no cooking appliances',
 }
 
 # 방 유형별 이미지 프롬프트에 강제 포함할 공간 힌트 (영문)
@@ -75,6 +78,51 @@ _ROOM_SPACE_HINTS: dict[str, str] = {
   '주방': 'kitchen with cabinets and countertop',
   '발코니': 'balcony with plants and outdoor furniture',
   '발코나': 'balcony with plants and outdoor furniture',
+  '침실': 'bedroom with bed, wardrobe, bedside table, soft ambient lighting',
+  '안방': 'master bedroom with double bed, built-in wardrobe, bedside tables, soft ambient lighting',
+  '작은방': 'small bedroom with single bed, study desk and wardrobe',
+}
+
+# 재질 한국어 → Imagen 영문 변환 (레퍼런스 시그니처 텍스트 힌트 전용)
+_MATERIAL_EN_MAP: dict[str, str] = {
+  '원목': 'natural wood',
+  '패브릭': 'fabric',
+  '황동': 'brass',
+  '메탈': 'metal',
+  '가죽': 'leather',
+  '유리': 'glass',
+  '대리석': 'marble',
+  '콘크리트': 'concrete',
+  '벽돌': 'brick',
+  '세라믹': 'ceramic',
+  '라탄': 'rattan',
+  '린넨': 'linen',
+  '벨벳': 'velvet',
+  '스틸': 'steel',
+  '자작나무': 'birch wood',
+  '천연석': 'natural stone',
+  '타일': 'tile',
+}
+
+# 스타일 토큰 한국어 → Imagen 영문 변환 (레퍼런스 시그니처 텍스트 힌트 전용)
+_STYLE_TOKEN_EN_MAP: dict[str, str] = {
+  '미니멀': 'minimal',
+  '내추럴': 'natural',
+  '코지': 'cozy',
+  '모던': 'modern',
+  '빈티지': 'vintage',
+  '인더스트리얼': 'industrial',
+  '클래식': 'classic',
+  '스칸디나비안': 'Scandinavian',
+  '보헤미안': 'bohemian',
+  '웜': 'warm',
+  '쿨': 'cool',
+  '아늑한': 'cozy',
+  '고급스러운': 'luxury',
+  '북유럽': 'Nordic',
+  '와비사비': 'wabi-sabi',
+  '보태니컬': 'botanical',
+  '아르데코': 'art deco',
 }
 
 # 한국어 가전명 → Imagen 영문 키워드 매핑
@@ -144,6 +192,34 @@ _FURNITURE_QUERY_SYSTEM_PROMPT = '''당신은 이케아 한국 상품 검색 전
 ```
 
 반드시 위와 동일한 JSON 코드 블록 형식으로만 응답하세요. 코드 블록 외 텍스트 금지.'''
+
+# 사용자가 업로드한 인테리어 레퍼런스 이미지에서 톤 시그니처를 추출하는 시스템 프롬프트
+_REFERENCE_VISION_SYSTEM_PROMPT = '''당신은 인테리어 분위기 분석 전문가입니다.
+사용자가 업로드한 인테리어 사진(카페·SNS 캡쳐 등)에서 톤·재질·분위기를 추출해
+반드시 아래 JSON 형식 코드 블록 한 개로만 응답하세요. 코드 블록 외 텍스트 금지.
+
+응답 형식:
+```json
+{
+  "primary_hex": "#E8DFD3",
+  "secondary_hex": "#A89682",
+  "accent_hex": "#2E2A26",
+  "materials": ["원목", "패브릭", "황동"],
+  "style_tokens": ["웜", "japandi", "코지"],
+  "lighting": "warm low-key indirect",
+  "mood": "차분하고 따뜻한 휴식 무드"
+}
+```
+
+규칙:
+- primary_hex: 사진에서 가장 넓은 면적을 차지하는 주색상 hex
+- secondary_hex: 두 번째로 두드러진 색상 hex
+- accent_hex: 포인트가 되는 강조 색상 hex (없으면 secondary와 동일하게)
+- materials: 식별되는 마감재 한국어 2~4개 (원목, 패브릭, 메탈, 가죽, 유리, 황동, 대리석, 콘크리트 등)
+- style_tokens: 한국 인테리어 시장에서 흔히 쓰는 스타일 키워드 2~4개
+  (japandi, 미니멀, 내추럴, 코지, 모던, 빈티지, 인더스트리얼, 클래식, 스칸디나비안, 보헤미안 등)
+- lighting: 조명 분위기 영문 1줄 (warm/cool, high/low key, indirect/direct 조합)
+- mood: 공간 분위기를 한국어로 짧게 요약 (10~20자)'''
 
 # 방별 렌더링 이미지에서 가구 시각 속성을 추출하는 시스템 프롬프트
 _RENDER_VISION_SYSTEM_PROMPT = '''당신은 인테리어 이미지 분석 전문가입니다.
@@ -259,13 +335,82 @@ class ClaudeService:
     logger.info('Vision 분석 완료: 방 %d개', len(result.get('rooms', [])))
     return result
 
+  async def analyze_reference_image(
+    self,
+    image_bytes: bytes,
+    mime: str,
+    timeout_s: float = 15.0,
+  ) -> dict | None:
+    """사용자 업로드 인테리어 레퍼런스 이미지에서 톤 시그니처를 추출한다.
+
+    실패·타임아웃·파싱 오류 시 None을 반환하고 예외를 전파하지 않는다
+    (호출자는 None일 때 시그니처 없이 톤 생성을 계속 진행).
+    """
+    b64 = base64.b64encode(image_bytes).decode()
+
+    async def _call() -> dict:
+      resp = await self._client.messages.create(
+        model=self._model,
+        max_tokens=1024,
+        system=_REFERENCE_VISION_SYSTEM_PROMPT,
+        messages=[{
+          'role': 'user',
+          'content': [
+            {
+              'type': 'image',
+              'source': {'type': 'base64', 'media_type': mime, 'data': b64},
+            },
+            {
+              'type': 'text',
+              'text': '이 인테리어 사진의 톤·재질·분위기를 JSON 시그니처로 추출해주세요.',
+            },
+          ],
+        }],
+      )
+      text = next((block.text for block in resp.content if hasattr(block, 'text')), '')
+      return _parse_json_block(text)
+
+    try:
+      result = await asyncio.wait_for(_call(), timeout=timeout_s)
+      logger.info('레퍼런스 톤 시그니처 추출 완료: %s', result.get('mood', ''))
+      return result
+    except Exception as e:
+      logger.warning('레퍼런스 톤 시그니처 추출 실패: %s', e)
+      return None
+
+  @staticmethod
+  def _format_reference_block(reference_signature: dict | None) -> str:
+    """레퍼런스 시그니처 dict를 톤 생성 프롬프트에 끼울 텍스트 블록으로 변환한다."""
+    if not reference_signature:
+      return ''
+    sig = reference_signature
+    materials = ', '.join(sig.get('materials') or [])
+    tokens = ', '.join(sig.get('style_tokens') or [])
+    return (
+      '\n레퍼런스 이미지 분석 결과 (사용자가 원하는 분위기):\n'
+      f'- 주색상: {sig.get("primary_hex", "")} / '
+      f'보조: {sig.get("secondary_hex", "")} / 포인트: {sig.get("accent_hex", "")}\n'
+      f'- 재질: {materials}\n'
+      f'- 스타일 키워드: {tokens}\n'
+      f'- 조명: {sig.get("lighting", "")}\n'
+      f'- 무드: {sig.get("mood", "")}\n'
+      '\n레퍼런스 모드 규칙:\n'
+      '- 6개 톤 모두 이 시그니처를 시드로 사용해 변주(라이트/다크/웜/쿨/소프트/볼드)\n'
+      '- 각 톤의 color_palette 첫 번째 색은 primary_hex 와 인접한 색조(±20)를 유지\n'
+      '- keywords에는 위 style_tokens 중 최소 1개를 반드시 포함\n'
+    )
+
   async def generate_tone_candidates(
     self,
     rooms: list[dict],
     floor_area_pyeong: float,
     year: int = 2026,
+    reference_signature: dict | None = None,
   ) -> tuple[list[dict], dict]:
-    """도면 특성과 트렌드를 기반으로 인테리어 톤 후보 6개를 생성한다."""
+    """도면 특성과 트렌드를 기반으로 인테리어 톤 후보 6개를 생성한다.
+
+    reference_signature가 주어지면 6개 톤을 모두 해당 시그니처를 시드로 변주한다.
+    """
     cache_key = f'tone-trend:{year}'
     cached_trend = trend_cache.get(cache_key)
 
@@ -280,6 +425,7 @@ class ClaudeService:
       logger.info('트렌드 캐시 미스: Web Search 호출')
 
     room_summary = ', '.join(r.get('room_type', '') for r in rooms)
+    reference_block = self._format_reference_block(reference_signature)
     prompt = f'''아파트 인테리어 톤 후보 6개를 생성해주세요.
 
 도면 정보:
@@ -287,7 +433,7 @@ class ClaudeService:
 - 방 구성: {room_summary}
 
 {trend_context}
-
+{reference_block}
 반드시 아래 JSON 형식으로만 응답하세요 (JSON 코드 블록 외 텍스트 금지):
 
 ```json
@@ -355,6 +501,7 @@ class ClaudeService:
     user_text: str,
     mood_chips: list[str],
     year: int = 2026,
+    reference_signature: dict | None = None,
   ) -> tuple[list[dict], dict]:
     """사용자 입력(자유 텍스트 + 무드 칩)을 기반으로 톤 변형 3개를 생성한다.
 
@@ -375,6 +522,17 @@ class ClaudeService:
 
     room_summary = ', '.join(r.get('room_type', '') for r in rooms)
     chips_text = ', '.join(mood_chips) if mood_chips else '(없음)'
+    reference_block = self._format_reference_block(reference_signature)
+
+    # 텍스트 없이 레퍼런스 이미지만 있을 때 프롬프트 분기
+    if user_text.strip():
+      user_input_block = f'''사용자 입력:
+- 원하는 분위기: {user_text}
+- 선택한 무드 키워드: {chips_text}'''
+    else:
+      user_input_block = f'''사용자 입력:
+- 원하는 분위기: (레퍼런스 이미지에서 추출한 시각 속성으로 대체)
+- 선택한 무드 키워드: {chips_text}'''
 
     prompt = f'''사용자가 원하는 인테리어 스타일을 기반으로 톤 변형 3개를 생성해주세요.
 
@@ -382,12 +540,10 @@ class ClaudeService:
 - 공급면적: {floor_area_pyeong}평
 - 방 구성: {room_summary}
 
-사용자 입력:
-- 원하는 분위기: {user_text}
-- 선택한 무드 키워드: {chips_text}
+{user_input_block}
 
 {trend_context}
-
+{reference_block}
 반드시 아래 JSON 형식으로만 응답하세요 (JSON 코드 블록 외 텍스트 금지):
 
 ```json
@@ -468,8 +624,13 @@ class ClaudeService:
     room: dict,
     tone: dict,
     refinement: dict | None = None,
+    reference_signature: dict | None = None,
   ) -> str:
-    """방 정보와 선택 톤을 기반으로 Imagen 프롬프트를 생성한다."""
+    """방 정보와 선택 톤을 기반으로 Imagen 프롬프트를 생성한다.
+
+    reference_signature가 주어지면 Claude Vision이 추출한 톤·재질·조명 정보를
+    영문 텍스트 힌트로 변환해 프롬프트에 추가한다 (이미지 복사가 아닌 분위기 재해석).
+    """
     room_type = room.get('room_type', '거실')
 
     # 한국어 방 이름을 영어로 변환 (Imagen은 영어 모델 — 한국어 토큰이 공간 인식을 흐림)
@@ -536,7 +697,8 @@ class ClaudeService:
     )
 
     appliance_hint = self._build_appliance_hint(room_type, refinement)
-    return base + self._build_refinement_hint(refinement) + appliance_hint
+    reference_hint = self._build_reference_style_hint(reference_signature)
+    return base + self._build_refinement_hint(refinement) + appliance_hint + reference_hint
 
   @staticmethod
   def _build_size_hint(area_sqm: float | None) -> str:
@@ -557,6 +719,40 @@ class ClaudeService:
     else:
       adj = 'spacious'
     return f'{adj} {area_sqm:.1f}sqm '
+
+  @staticmethod
+  def _build_reference_style_hint(reference_signature: dict | None) -> str:
+    """레퍼런스 시그니처에서 추출한 톤·재질·조명을 Imagen 영문 텍스트 힌트로 변환한다.
+
+    Claude Vision이 분석한 분위기를 새 공간에 재해석하는 용도이며,
+    이미지 시각적 복사(StyleReferenceImage)와 다르다.
+    """
+    if not reference_signature:
+      return ''
+    sig = reference_signature
+    primary = sig.get('primary_hex', '')
+    secondary = sig.get('secondary_hex', '')
+    lighting = sig.get('lighting', '')
+
+    en_materials = [_MATERIAL_EN_MAP.get(m, m) for m in (sig.get('materials') or [])]
+    en_tokens = [_STYLE_TOKEN_EN_MAP.get(t, t) for t in (sig.get('style_tokens') or [])]
+
+    parts = []
+    if en_tokens:
+      parts.append(f"{' '.join(en_tokens)} aesthetic")
+    if primary:
+      color_desc = f'color palette inspired by {primary}'
+      if secondary:
+        color_desc += f' and {secondary}'
+      parts.append(color_desc)
+    if en_materials:
+      parts.append(f"{', '.join(en_materials)} materials and textures")
+    if lighting:
+      parts.append(f'{lighting} lighting')
+
+    if not parts:
+      return ''
+    return ', inspired by reference style: ' + ', '.join(parts)
 
   @staticmethod
   def _build_appliance_hint(room_type: str, refinement: dict | None) -> str:

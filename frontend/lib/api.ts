@@ -22,11 +22,13 @@ async function getAuthHeaders(): Promise<HeadersInit> {
 export async function postAnalyze(
   file: File,
   floorAreaPyeong: number,
+  referenceFile?: File,
 ): Promise<AnalyzeResponse> {
   const headers = await getAuthHeaders()
   const fd = new FormData()
   fd.append('file', file)
   fd.append('floor_area_pyeong', String(floorAreaPyeong))
+  if (referenceFile) fd.append('reference', referenceFile)
 
   const res = await fetch(`${BASE}/analyze`, {
     method: 'POST',
@@ -47,6 +49,7 @@ export async function postAnalyzeCustom(
   floorAreaPyeong: number,
   userText: string,
   moodChips: string[],
+  referenceFile?: File,
 ): Promise<AnalyzeResponse> {
   const headers = await getAuthHeaders()
   const fd = new FormData()
@@ -54,6 +57,7 @@ export async function postAnalyzeCustom(
   fd.append('floor_area_pyeong', String(floorAreaPyeong))
   fd.append('user_text', userText)
   fd.append('mood_chips', JSON.stringify(moodChips))
+  if (referenceFile) fd.append('reference', referenceFile)
 
   const res = await fetch(`${BASE}/analyze/custom`, {
     method: 'POST',

@@ -30,6 +30,7 @@ export interface AnalyzeResponse {
   rooms: RoomOut[]
   tone_candidates: ToneCandidateOut[]
   warnings: string[]
+  has_reference?: boolean
 }
 
 export interface Appliance {

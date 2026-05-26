@@ -249,11 +249,19 @@ async def render(
 
   refinement = body.refinement_dict()
 
+  # 세션에 저장된 레퍼런스 시그니처 로드 (Claude Vision이 추출한 톤·재질·조명 등)
+  # 이미지 bytes를 직접 conditioning하지 않고, 추출된 텍스트 특성으로 프롬프트를 보강한다
+  reference_signature: dict | None = session.get('reference_signature')
+  if reference_signature:
+    logger.info('레퍼런스 시그니처 로드: mood=%s', reference_signature.get('mood', ''))
+
   # 방별 Imagen 프롬프트 생성
   imagen_specs = [
     {
       'room_type': room['room_type'],
-      'prompt': claude.build_imagen_prompt(room, tone, refinement=refinement),
+      'prompt': claude.build_imagen_prompt(
+        room, tone, refinement=refinement, reference_signature=reference_signature,
+      ),
       'rationale': claude.build_rationale(room, tone),
     }
     for room in rooms

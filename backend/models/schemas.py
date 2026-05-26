@@ -43,7 +43,8 @@ class AnalyzeResponse(BaseModel):
   rooms: list[RoomOut]
   tone_candidates: list[ToneCandidateOut]
   warnings: list[str] = []
-  # 도면 URL은 절대 포함하지 않는다 (RISK-02)
+  has_reference: bool = False  # 레퍼런스 이미지 기반 톤이면 true (프론트엔드 배지 용)
+  # 도면·레퍼런스 URL은 절대 포함하지 않는다 (RISK-02)
 
 
 # ── /render 요청·응답 모델 ─────────────────────────────────

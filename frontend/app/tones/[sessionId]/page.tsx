@@ -94,6 +94,12 @@ export default function TonesPage() {
           <p className='mt-3 max-w-2xl text-sm leading-6 text-stone-500'>
             AI가 도면을 분석해 공간에 맞는 톤 후보를 준비했습니다. 하나를 선택하면 방별 연출안을 생성합니다.
           </p>
+          {data.has_reference && (
+            <span className='mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800'>
+              <span className='h-1.5 w-1.5 rounded-full bg-amber-500' />
+              내 레퍼런스 이미지 기반 톤
+            </span>
+          )}
         </div>
 
         {data.warnings.length > 0 && (

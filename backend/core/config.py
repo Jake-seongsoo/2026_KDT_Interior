@@ -31,6 +31,8 @@ class Settings(BaseSettings):
   GCS_RENDER_BUCKET_NAME: str = ''
   GOOGLE_APPLICATION_CREDENTIALS: str = str(ROOT_DIR / 'backend' / 'service-account.json')
   IMAGEN_MODEL: str = 'imagen-4.0-generate-001'
+  # 레퍼런스 이미지 기반 conditioning 전용 모델 (StyleReferenceImage 지원)
+  IMAGEN_CAPABILITY_MODEL: str = 'imagen-3.0-capability-001'
 
   # Supabase
   SUPABASE_URL: str = ''

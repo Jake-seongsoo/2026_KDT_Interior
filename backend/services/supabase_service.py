@@ -43,6 +43,18 @@ class SupabaseService:
   async def update_session_gcs_path(self, session_id: str, gcs_path: str) -> None:
     self._db.table('analysis_sessions').update({'gcs_path': gcs_path}).eq('id', session_id).execute()
 
+  async def update_session_reference(
+    self,
+    session_id: str,
+    reference_gcs_path: str,
+    reference_signature: dict | None,
+  ) -> None:
+    """레퍼런스 이미지 GCS 경로 + Vision 시그니처를 한 번에 저장한다."""
+    self._db.table('analysis_sessions').update({
+      'reference_gcs_path': reference_gcs_path,
+      'reference_signature': reference_signature,
+    }).eq('id', session_id).execute()
+
   async def update_session_status(
     self,
     session_id: str,

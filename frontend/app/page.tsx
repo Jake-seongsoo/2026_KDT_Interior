@@ -4,10 +4,19 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FloorPlanUploader } from '@/components/upload/FloorPlanUploader'
 import { CustomToneInput, type CustomToneInputValue } from '@/components/upload/CustomToneInput'
-import { modeStorage, customInputStorage } from '@/lib/session-storage'
+import { ReferenceImageUploader } from '@/components/upload/ReferenceImageUploader'
+import { modeStorage, customInputStorage, referenceStorage, uploadStorage } from '@/lib/session-storage'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import type { ToneMode } from '@/lib/session-storage'
+
+const readAsBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => resolve(e.target?.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
 
 export default function HomePage() {
   const router = useRouter()
@@ -17,6 +26,8 @@ export default function HomePage() {
     moodChips: [],
   })
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [showReference, setShowReference] = useState(false)
+  const [referenceFile, setReferenceFile] = useState<File | null>(null)
 
   const ensureLoggedIn = async () => {
     const supabase = createClient()
@@ -32,31 +43,32 @@ export default function HomePage() {
   }
 
   const handleUpload = async (file: File, floorAreaPyeong: number) => {
-    if (!(await ensureLoggedIn())) {
-      return
+    if (!(await ensureLoggedIn())) return
+
+    const [base64, refBase64] = await Promise.all([
+      readAsBase64(file),
+      showReference && referenceFile ? readAsBase64(referenceFile) : Promise.resolve(null),
+    ])
+
+    uploadStorage.save(base64, file.name, file.type, floorAreaPyeong)
+
+    if (showReference && referenceFile && refBase64) {
+      referenceStorage.save(refBase64, referenceFile.name, referenceFile.type)
+    } else {
+      referenceStorage.clear()
     }
 
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const base64 = e.target?.result as string
-      sessionStorage.setItem('upload:file:base64', base64)
-      sessionStorage.setItem('upload:file:name', file.name)
-      sessionStorage.setItem('upload:file:type', file.type)
-      sessionStorage.setItem('upload:floorArea', String(floorAreaPyeong))
-
-      modeStorage.set(mode)
-      if (mode === 'custom') {
-        customInputStorage.set({
-          userText: customInput.userText.trim(),
-          moodChips: customInput.moodChips,
-        })
-      } else {
-        customInputStorage.clear()
-      }
-
-      router.push('/analyze')
+    modeStorage.set(mode)
+    if (mode === 'custom') {
+      customInputStorage.set({
+        userText: customInput.userText.trim(),
+        moodChips: customInput.moodChips,
+      })
+    } else {
+      customInputStorage.clear()
     }
-    reader.readAsDataURL(file)
+
+    router.push('/analyze')
   }
 
   const autoSteps = [
@@ -168,24 +180,56 @@ export default function HomePage() {
             hideSubmit={mode === 'custom'}
           />
 
+          {/* 레퍼런스 이미지 토글 */}
+          <div className='mt-4 border-t border-stone-100 pt-4'>
+            <button
+              type='button'
+              onClick={() => {
+                setShowReference(v => !v)
+                if (showReference) setReferenceFile(null)
+              }}
+              className='flex w-full items-center justify-between text-sm text-stone-600 hover:text-stone-900'
+            >
+              <span className='font-medium'>
+                레퍼런스 이미지 추가
+                <span className='ml-1.5 text-xs font-normal text-stone-400'>(선택)</span>
+              </span>
+              <span className={cn(
+                'flex h-5 w-9 items-center rounded-full transition-colors px-0.5',
+                showReference ? 'bg-stone-900 justify-end' : 'bg-stone-200 justify-start',
+              )}>
+                <span className='h-4 w-4 rounded-full bg-white shadow-sm' />
+              </span>
+            </button>
+
+            {showReference && (
+              <div className='mt-3'>
+                <p className='mb-2 text-xs text-stone-500'>
+                  카페·SNS 등에서 캡처한 인테리어 사진을 올리면 그 분위기를 기반으로 톤을 추천해드립니다.
+                </p>
+                <ReferenceImageUploader onFileChange={setReferenceFile} />
+              </div>
+            )}
+          </div>
+
           {mode === 'custom' && (
             <div className='mt-5 border-t border-stone-100 pt-5 space-y-5'>
               <CustomToneInput value={customInput} onChange={setCustomInput} />
               <button
                 form='upload-form'
                 type='submit'
-                disabled={!selectedFile || !customInput.userText.trim()}
+                disabled={!selectedFile || (!customInput.userText.trim() && !referenceFile)}
                 className={cn(
                   'w-full rounded-lg py-3 text-sm font-semibold transition-colors',
-                  (!selectedFile || !customInput.userText.trim())
+                  (!selectedFile || (!customInput.userText.trim() && !referenceFile))
                     ? 'cursor-not-allowed bg-stone-200 text-stone-400'
                     : 'bg-stone-900 text-white hover:bg-stone-700',
                 )}
               >
                 분석 시작
               </button>
-              {!customInput.userText.trim() && selectedFile && (
-                <p className='text-center text-xs text-stone-400'>원하는 분위기를 입력해야 분석을 시작할 수 있습니다.</p>
+              {!customInput.userText.trim() && !referenceFile && selectedFile && (
+                <p className='text-center text-xs text-stone-400'>원하는 분위기를 입력하거나 레퍼런스 이미지를 추가해야 분석을 시작할 수 있습니다.</p>
               )}
             </div>
           )}

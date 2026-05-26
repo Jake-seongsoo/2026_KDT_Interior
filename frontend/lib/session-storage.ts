@@ -12,6 +12,9 @@ const KEYS = {
   uploadName: 'upload:file:name',
   uploadType: 'upload:file:type',
   uploadFloorArea: 'upload:floorArea',
+  referenceBase64: 'upload:reference:base64',
+  referenceName: 'upload:reference:name',
+  referenceType: 'upload:reference:type',
   mode: 'tone:mode',
   customInput: 'tone:custom_input',
   analyze: (sessionId: string) => `analyze:${sessionId}`,
@@ -41,6 +44,28 @@ export const uploadStorage = {
     sessionStorage.removeItem(KEYS.uploadName)
     sessionStorage.removeItem(KEYS.uploadType)
     sessionStorage.removeItem(KEYS.uploadFloorArea)
+  },
+}
+
+export const referenceStorage = {
+  save(base64: string, name: string, type: string) {
+    sessionStorage.setItem(KEYS.referenceBase64, base64)
+    sessionStorage.setItem(KEYS.referenceName, name)
+    sessionStorage.setItem(KEYS.referenceType, type)
+  },
+  load(): { base64: string; name: string; type: string } | null {
+    const base64 = sessionStorage.getItem(KEYS.referenceBase64)
+    if (!base64) return null
+    return {
+      base64,
+      name: sessionStorage.getItem(KEYS.referenceName) ?? 'reference.jpg',
+      type: sessionStorage.getItem(KEYS.referenceType) ?? 'image/jpeg',
+    }
+  },
+  clear() {
+    sessionStorage.removeItem(KEYS.referenceBase64)
+    sessionStorage.removeItem(KEYS.referenceName)
+    sessionStorage.removeItem(KEYS.referenceType)
   },
 }
 

@@ -47,6 +47,33 @@ class StorageService:
     blob = self._bucket.blob(gcs_path)
     return blob.generate_signed_url(expiration=self._ttl, version='v4')
 
+  # ── 레퍼런스 이미지 업로드 (private, 도면과 동일 정책) ──
+
+  def upload_reference(
+    self,
+    user_id: str,
+    session_id: UUID,
+    data: bytes,
+    content_type: str,
+  ) -> str:
+    """사용자 업로드 인테리어 레퍼런스 이미지를 private 버킷에 저장한다."""
+    ext = '.png' if content_type == 'image/png' else '.jpg'
+    path = f'references/{user_id}/{session_id}/original{ext}'
+    blob = self._bucket.blob(path)
+    blob.upload_from_string(data, content_type=content_type)
+    logger.info('레퍼런스 이미지 업로드 완료: %s', path)
+    return path
+
+  def download_reference(self, gcs_path: str) -> bytes:
+    """Imagen 호출용 — 저장된 레퍼런스 이미지 bytes를 가져온다."""
+    blob = self._bucket.blob(gcs_path)
+    return blob.download_as_bytes()
+
+  def signed_url_for_reference(self, gcs_path: str) -> str:
+    """레퍼런스 미리보기용 15분 TTL Signed URL."""
+    blob = self._bucket.blob(gcs_path)
+    return blob.generate_signed_url(expiration=self._ttl, version='v4')
+
   # ── 렌더링 이미지 업로드 (public) ────────────────────────
 
   def upload_render(
