@@ -294,6 +294,55 @@ class TestBuildImagenPrompt:
     assert 'flexible room' in prompt
     assert '알파룸' not in prompt
 
+  def test_bedroom_includes_bed_space_hint(self, service):
+    """침실2 프롬프트에 침대·옷장 공간 힌트가 포함된다."""
+    room = {'room_type': '침실2'}
+    tone = {
+      'name': '미니멀',
+      'color_palette': [{'name': '화이트', 'hex': '#FFFFFF', 'role': '벽'}],
+      'keywords': ['미니멀', '소파'],
+    }
+    prompt = service.build_imagen_prompt(room, tone)
+    assert 'bed' in prompt
+    assert 'wardrobe' in prompt
+
+  def test_bedroom_excludes_kitchen_keywords(self, service):
+    """침실 프롬프트에 주방 관련 키워드가 필터링된다."""
+    room = {'room_type': '침실2'}
+    tone = {
+      'name': '모던',
+      'color_palette': [{'name': '그레이', 'hex': '#888888', 'role': '벽'}],
+      'keywords': ['모던', '식탁', '가스레인지', '싱크대'],
+    }
+    prompt = service.build_imagen_prompt(room, tone)
+    assert '식탁' not in prompt
+    assert '가스레인지' not in prompt
+    assert '싱크대' not in prompt
+
+  def test_bedroom_includes_no_kitchen_negative_hint(self, service):
+    """침실 프롬프트에 no kitchen 관련 negative 단서가 포함된다."""
+    room = {'room_type': '침실2'}
+    tone = {
+      'name': '미니멀',
+      'color_palette': [],
+      'keywords': ['미니멀'],
+    }
+    prompt = service.build_imagen_prompt(room, tone)
+    assert 'no kitchen cabinets' in prompt
+    assert 'no stove' in prompt
+
+  def test_master_bedroom_includes_bed_space_hint(self, service):
+    """안방 프롬프트에 더블 침대·빌트인 옷장 힌트가 포함된다."""
+    room = {'room_type': '안방'}
+    tone = {
+      'name': '럭셔리',
+      'color_palette': [],
+      'keywords': ['럭셔리'],
+    }
+    prompt = service.build_imagen_prompt(room, tone)
+    assert 'double bed' in prompt
+    assert 'wardrobe' in prompt
+
 
 # ── generate_custom_tone_variants 테스트 ─────────────────────────────────────
 
@@ -394,6 +443,22 @@ async def test_custom_variants_prompt_includes_mood_chips(service):
 
   for chip in chips:
     assert chip in captured['content'], f'무드 칩 "{chip}"이 프롬프트에 없음'
+
+
+@pytest.mark.asyncio
+async def test_custom_variants_empty_text_with_reference(service):
+  """user_text가 빈 문자열이어도 reference_signature가 있으면 정상 동작한다."""
+  service._client.messages.create = AsyncMock(
+    return_value=_make_mock_response(CUSTOM_TONES)
+  )
+
+  rooms = [{'room_type': '거실'}]
+  ref_sig = {'primary_colors': ['#F0EDE5'], 'mood': 'minimal'}
+  tones, _ = await service.generate_custom_tone_variants(
+    rooms, 24.0, '', [], reference_signature=ref_sig
+  )
+
+  assert len(tones) == 3
 
 
 @pytest.mark.asyncio
