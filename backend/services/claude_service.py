@@ -26,11 +26,10 @@ _ROOM_EXCLUDED_KEYWORDS: dict[str, set[str]] = {
 }
 
 # 발코니 인접 상태별 Imagen 프롬프트 단서 (비확장/확장형)
+# False(비확장): 슬라이딩 도어 묘사 제거 — 도어가 이미지에 강하게 등장해 실내 인테리어 품질 저하
 _BALCONY_BOUNDARY_HINTS: dict[str | None, str] = {
   False: (
-    'room interior bounded by floor-to-ceiling sliding glass door to balcony, '
-    'balcony NOT part of room, no furniture beyond sliding door, '
-    'interior wall ends at glass door'
+    'balcony NOT part of room, clean interior wall boundary separating room from balcony'
   ),
   True: (
     'expanded balcony integrated into room with floor-level transition, '
@@ -272,7 +271,8 @@ JSON 코드 블록 외에 어떤 텍스트도 포함하지 마세요.
 
 규칙:
 - room_type: 도면에 표기된 한국어 방 이름을 그대로 사용 (예: 거실, 주방, 안방, 침실2, 침실3, 욕실, 발코니 등). 번호가 붙은 방(침실2, 침실3)도 도면 표기 그대로 반환
-- priority: 거실=1, 주방=2, 안방=3, 침실·침실2·침실3 등 번호 순=4·5·6, 기타 순
+- 욕실·화장실(부부욕실, 가족욕실 포함)은 반드시 rooms 배열에 포함. 생활공간 여부와 관계없이 도면에 표기된 모든 방을 추출하며 자체 필터링 금지
+- priority: 거실=1, 주방=2, 안방=3, 침실·침실2·침실3 등 번호 순=4·5·6, 욕실=7, 기타 순
 - confidence: 0~1 사이 신뢰도 점수
 - position: 도면 이미지 내 상대 좌표 (0~1 정규화). 모를 경우 null
 - has_adjoining_balcony: 이 방이 발코니/베란다와 인접해 있으면 true, 아니면 false. 한국 아파트 도면에서 발코니는 보통 빗금(해칭) 패턴이나 옅은 색상으로 표시되며 깊이 1.0~1.5m
@@ -693,6 +693,7 @@ class ClaudeService:
       f'{keywords}, '
       f'color palette: {colors}, '
       'photorealistic, high quality, natural lighting, 4K resolution, '
+      'single room view, one room only, no split screen, no collage, no diptych, '
       f'clean modern space, no people{negative_hint}{balcony_hint}'
     )
 
