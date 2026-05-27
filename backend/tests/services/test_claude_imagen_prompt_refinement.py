@@ -1,77 +1,63 @@
 """build_imagen_prompt 정밀화 파라미터 반영 테스트"""
 import pytest
-from unittest.mock import patch
+
 from services.claude_service import ClaudeService
 
 
-ROOM = {'room_type': '거실'}
-TONE = {
-  'name': '내추럴 모던',
-  'keywords': ['우드', '린넨', '자연광'],
-  'color_palette': [{'name': 'ivory', 'hex': '#F5EFE5'}],
-}
-
-
-@pytest.fixture
-def svc():
-  with patch('services.claude_service.get_settings'):
-    return ClaudeService()
-
-
 class TestBuildImagenPromptRefinement:
-  def test_refinement_없으면_기본_프롬프트(self, svc):
-    prompt = svc.build_imagen_prompt(ROOM, TONE)
+  def test_refinement_없으면_기본_프롬프트(self, claude_service_sync, room_living, minimal_tone):
+    prompt = claude_service_sync.build_imagen_prompt(room_living, minimal_tone)
     assert 'living room' in prompt.lower() or 'Korean apartment' in prompt
     assert 'child-safe' not in prompt
     assert 'pet-friendly' not in prompt
 
-  def test_family_with_kid_힌트_포함(self, svc):
-    prompt = svc.build_imagen_prompt(ROOM, TONE, refinement={'family_type': 'family_with_kid'})
+  def test_family_with_kid_힌트_포함(self, claude_service_sync, room_living, minimal_tone):
+    prompt = claude_service_sync.build_imagen_prompt(room_living, minimal_tone, refinement={'family_type': 'family_with_kid'})
     assert 'child-safe' in prompt
 
-  def test_family_with_pet_힌트_포함(self, svc):
-    prompt = svc.build_imagen_prompt(ROOM, TONE, refinement={'family_type': 'family_with_pet'})
+  def test_family_with_pet_힌트_포함(self, claude_service_sync, room_living, minimal_tone):
+    prompt = claude_service_sync.build_imagen_prompt(room_living, minimal_tone, refinement={'family_type': 'family_with_pet'})
     assert 'pet-friendly' in prompt
 
-  def test_couple_힌트_포함(self, svc):
-    prompt = svc.build_imagen_prompt(ROOM, TONE, refinement={'family_type': 'couple'})
+  def test_couple_힌트_포함(self, claude_service_sync, room_living, minimal_tone):
+    prompt = claude_service_sync.build_imagen_prompt(room_living, minimal_tone, refinement={'family_type': 'couple'})
     assert 'romantic' in prompt or 'cozy' in prompt
 
-  def test_style_keywords_반영(self, svc):
-    prompt = svc.build_imagen_prompt(ROOM, TONE, refinement={'style_keywords': ['미니멀', '빈티지']})
+  def test_style_keywords_반영(self, claude_service_sync, room_living, minimal_tone):
+    prompt = claude_service_sync.build_imagen_prompt(room_living, minimal_tone, refinement={'style_keywords': ['미니멀', '빈티지']})
     assert '미니멀' in prompt and '빈티지' in prompt
 
-  def test_keep_appliances_True_반영(self, svc):
-    prompt = svc.build_imagen_prompt(ROOM, TONE, refinement={'keep_appliances': True})
+  def test_keep_appliances_True_반영(self, claude_service_sync, room_living, minimal_tone):
+    prompt = claude_service_sync.build_imagen_prompt(room_living, minimal_tone, refinement={'keep_appliances': True})
     assert 'retain existing appliances' in prompt
 
-  def test_keep_appliances_False_미반영(self, svc):
-    prompt = svc.build_imagen_prompt(ROOM, TONE, refinement={'keep_appliances': False})
+  def test_keep_appliances_False_미반영(self, claude_service_sync, room_living, minimal_tone):
+    prompt = claude_service_sync.build_imagen_prompt(room_living, minimal_tone, refinement={'keep_appliances': False})
     assert 'retain existing appliances' not in prompt
 
-  def test_예산_낮을때_budget_friendly(self, svc):
-    prompt = svc.build_imagen_prompt(ROOM, TONE, refinement={'budget_10k_won': 1000})
+  def test_예산_낮을때_budget_friendly(self, claude_service_sync, room_living, minimal_tone):
+    prompt = claude_service_sync.build_imagen_prompt(room_living, minimal_tone, refinement={'budget_10k_won': 1000})
     assert 'budget-friendly' in prompt
 
-  def test_예산_높을때_premium(self, svc):
-    prompt = svc.build_imagen_prompt(ROOM, TONE, refinement={'budget_10k_won': 9000})
+  def test_예산_높을때_premium(self, claude_service_sync, room_living, minimal_tone):
+    prompt = claude_service_sync.build_imagen_prompt(room_living, minimal_tone, refinement={'budget_10k_won': 9000})
     assert 'premium' in prompt
 
-  def test_중간_예산_힌트_없음(self, svc):
-    prompt = svc.build_imagen_prompt(ROOM, TONE, refinement={'budget_10k_won': 4000})
+  def test_중간_예산_힌트_없음(self, claude_service_sync, room_living, minimal_tone):
+    prompt = claude_service_sync.build_imagen_prompt(room_living, minimal_tone, refinement={'budget_10k_won': 4000})
     assert 'budget-friendly' not in prompt
     assert 'premium' not in prompt
 
-  def test_refinement_None_전달(self, svc):
-    prompt = svc.build_imagen_prompt(ROOM, TONE, refinement=None)
+  def test_refinement_None_전달(self, claude_service_sync, room_living, minimal_tone):
+    prompt = claude_service_sync.build_imagen_prompt(room_living, minimal_tone, refinement=None)
     assert 'child-safe' not in prompt
 
-  def test_user_text_반영(self, svc):
-    prompt = svc.build_imagen_prompt(ROOM, TONE, refinement={'user_text': '그린톤 포인트 벽'})
+  def test_user_text_반영(self, claude_service_sync, room_living, minimal_tone):
+    prompt = claude_service_sync.build_imagen_prompt(room_living, minimal_tone, refinement={'user_text': '그린톤 포인트 벽'})
     assert '그린톤 포인트 벽' in prompt
 
-  def test_user_text_공백_무시(self, svc):
-    prompt = svc.build_imagen_prompt(ROOM, TONE, refinement={'user_text': '   '})
+  def test_user_text_공백_무시(self, claude_service_sync, room_living, minimal_tone):
+    prompt = claude_service_sync.build_imagen_prompt(room_living, minimal_tone, refinement={'user_text': '   '})
     assert 'child-safe' not in prompt
     assert 'pet-friendly' not in prompt
 
