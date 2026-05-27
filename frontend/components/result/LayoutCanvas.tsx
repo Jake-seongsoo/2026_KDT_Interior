@@ -81,16 +81,20 @@ export function LayoutCanvas({ rooms, activeRoomId, onRoomClick }: LayoutCanvasP
                 : null
 
             const minDim = Math.min(rect.w, rect.h)
-            const iconSize = Math.max(14, Math.min(minDim * 0.14, 28))
-            const nameSize = Math.max(11, Math.min(minDim * 0.1, 16))
+            const iconSize = Math.max(12, Math.min(minDim * 0.14, 28))
+            const nameSize = Math.max(10, Math.min(minDim * 0.1, 16))
             const subSize = Math.max(9, Math.min(minDim * 0.07, 12))
+
+            // 셀 높이에 따라 표시 요소 조절 (캔버스 단위 기준)
+            const showName = rect.h >= 45 && rect.w >= 50
+            const showArea = rect.h >= 65 && rect.w >= 55
 
             return (
               <button
                 key={room.room_id}
                 onClick={() => onRoomClick?.(room.room_id)}
                 title={`${room.room_type}${room.area_sqm ? ` ${room.area_sqm.toFixed(1)}㎡` : ''}`}
-                className='absolute flex flex-col items-center justify-center gap-0.5 p-1 transition-all hover:brightness-90'
+                className='absolute flex flex-col items-center justify-center gap-0.5 overflow-hidden p-1 transition-all hover:brightness-90'
                 style={{
                   left: `${(rect.x / CANVAS_W) * 100}%`,
                   top: `${(rect.y / CANVAS_H) * 100}%`,
@@ -106,13 +110,15 @@ export function LayoutCanvas({ rooms, activeRoomId, onRoomClick }: LayoutCanvasP
                 <Icon
                   style={{ width: iconSize, height: iconSize, color: palette.text, flexShrink: 0 }}
                 />
-                <span
-                  className='overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight'
-                  style={{ fontSize: nameSize, color: palette.text, maxWidth: '90%' }}
-                >
-                  {room.room_type}
-                </span>
-                {room.area_sqm && (
+                {showName && (
+                  <span
+                    className='overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight'
+                    style={{ fontSize: nameSize, color: palette.text, maxWidth: '90%' }}
+                  >
+                    {room.room_type}
+                  </span>
+                )}
+                {showArea && room.area_sqm && (
                   <span
                     className='overflow-hidden text-ellipsis whitespace-nowrap text-stone-500 leading-tight'
                     style={{ fontSize: subSize, maxWidth: '90%' }}
