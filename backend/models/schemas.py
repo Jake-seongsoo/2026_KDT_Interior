@@ -116,6 +116,16 @@ class RenderResponse(BaseModel):
   )
 
 
+# ── /share 요청·응답 모델 (F008 공유 링크) ─────────────────
+
+class ShareCreateRequest(BaseModel):
+  result_id: UUID
+
+
+class ShareCreateResponse(BaseModel):
+  share_id: UUID
+
+
 # ── /history 응답 모델 (F011 분석 기록 조회) ───────────────
 
 class HistoryResultItem(BaseModel):
