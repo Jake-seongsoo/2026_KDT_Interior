@@ -40,10 +40,6 @@ class Settings(BaseSettings):
   SUPABASE_SERVICE_ROLE_KEY: str = ''
   SUPABASE_JWT_SECRET: str = ''
 
-  # 네이버 쇼핑
-  NAVER_CLIENT_ID: str = ''
-  NAVER_CLIENT_SECRET: str = ''
-
   # CORS (쉼표 구분)
   CORS_ORIGINS: str = 'http://localhost:3000,http://127.0.0.1:3000'
 

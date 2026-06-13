@@ -5,7 +5,7 @@
   python ../tests/eval/recommendation_accuracy.py
 
 환경변수 필요:
-  ANTHROPIC_API_KEY, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
+  ANTHROPIC_API_KEY
 
 출력:
   tests/eval/results/{YYYYMMDD}.csv
@@ -28,7 +28,7 @@ BACKEND_DIR = Path(__file__).resolve().parents[2] / 'backend'
 sys.path.insert(0, str(BACKEND_DIR))
 
 from services.claude_service import ClaudeService
-from services.naver_service import NaverService
+from services.ikea_service import IkeaService
 from services.product_filter import filter_products_by_expected_colors
 from core.room_furniture_map import get_furniture_slots
 
@@ -151,7 +151,7 @@ EVAL_ROOM_TYPES = ['거실', '안방', '침실', '주방']
 
 async def evaluate_one(
   claude: ClaudeService,
-  naver: NaverService,
+  ikea: IkeaService,
   tone: dict,
   room_type: str,
 ) -> dict:
@@ -187,7 +187,7 @@ async def evaluate_one(
 
   for fq in queries:
     try:
-      products = await naver.search_products(fq['query'], display=5)
+      products = await ikea.search_products(fq['query'], display=5)
       if products:
         searched_slots += 1
         filtered = filter_products_by_expected_colors(
@@ -220,7 +220,7 @@ async def evaluate_one(
 
 async def main() -> None:
   claude = ClaudeService()
-  naver = NaverService()
+  ikea = IkeaService()
 
   results = []
   total = len(EVAL_TONES) * len(EVAL_ROOM_TYPES)
@@ -230,7 +230,7 @@ async def main() -> None:
     for room_type in EVAL_ROOM_TYPES:
       done += 1
       print(f'[{done}/{total}] {tone["name"]} + {room_type} 평가 중...')
-      row = await evaluate_one(claude, naver, tone, room_type)
+      row = await evaluate_one(claude, ikea, tone, room_type)
       results.append(row)
 
       # 요율 제한 방지

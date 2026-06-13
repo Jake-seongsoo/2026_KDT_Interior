@@ -43,7 +43,7 @@ npm run dev
 cd backend
 pytest                         # 전체
 pytest tests/services/test_claude_service.py   # 단일 파일
-pytest -k "test_naver"        # 이름 패턴 매칭
+pytest -k "test_ikea"         # 이름 패턴 매칭
 ```
 
 ### Playwright 테스트 (실제 API 호출 — 비용 ~$1)
@@ -67,7 +67,7 @@ npm run test:report    # HTML 리포트
 
 필수 키: `ANTHROPIC_API_KEY`, `GCP_PROJECT_ID`, `GCS_BUCKET_NAME`, `GCS_RENDER_BUCKET_NAME`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`.
 
-> 이케아 비공식 API는 별도 키 불필요. `NAVER_CLIENT_ID` / `NAVER_CLIENT_SECRET`은 더 이상 사용하지 않음.
+> 이케아 비공식 API는 별도 키 불필요. 네이버 쇼핑 API 연동은 제거됨 (2026-06, naver_service.py 삭제).
 
 GCP 로컬 인증: `backend/service-account.json` 에 서비스 계정 키 배치 후 `.env`에 경로 지정.
 
@@ -127,8 +127,7 @@ models/       ← Pydantic 스키마 (schemas.py 단일 파일)
 - **항상**: Imagen 4 (`imagen-4.0-generate-001`) — 텍스트 전용, 고품질
 - **레퍼런스 있을 때**: Claude Vision이 이미지에서 추출한 시그니처(색상·재질·조명·무드)를 영문 텍스트 힌트로 변환해 Imagen 프롬프트에 추가. 이미지 복사(StyleReferenceImage)가 아닌 분위기 재해석.
 - 분기 로직 없음 — `render_rooms_parallel`은 항상 `render_room`(generate 모델)만 호출. 레퍼런스 특성은 `build_imagen_prompt(reference_signature=...)` 텍스트로 반영
-- Gemini Image(gemini_image_service.py)는 PoC 후 미사용으로 확정.
-- `backend/services/gemini_image_service.py`, `backend/scripts/poc_gemini_conditioning.py`는 삭제 대상
+- Gemini Image는 PoC 후 미사용으로 확정 — 관련 코드(gemini_image_service.py, poc_gemini_conditioning.py) 삭제 완료.
 
 ### 이케아 비공식 API 제약
 
