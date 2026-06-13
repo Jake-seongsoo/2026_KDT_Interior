@@ -9,6 +9,7 @@ from anthropic import AsyncAnthropic
 
 from core.cache import furniture_query_cache, trend_cache
 from core.config import get_settings
+from core.room_matcher import lookup_room_key
 
 logger = logging.getLogger(__name__)
 
@@ -603,22 +604,6 @@ class ClaudeService:
     logger.info('커스텀 톤 변형 %d개 생성 완료 (cache_hit=%s)', len(tones), snapshot['cache_hit'])
     return tones, snapshot
 
-  @staticmethod
-  def _lookup_room_key(room_type: str, key_map: dict) -> str | None:
-    """방 이름으로 딕셔너리 키를 찾는다.
-
-    우선순위: 정확 매칭 → endswith 매칭(부부욕실→욕실) → startswith 매칭(침실2→침실)
-    """
-    if room_type in key_map:
-      return room_type
-    for key in key_map:
-      if room_type.endswith(key):
-        return key
-    for key in key_map:
-      if room_type.startswith(key):
-        return key
-    return None
-
   def build_imagen_prompt(
     self,
     room: dict,
@@ -637,7 +622,7 @@ class ClaudeService:
     # 정확 매칭 우선, 없으면 endswith/startswith 순 매칭
     room_en = _ROOM_EN_NAMES.get(room_type)
     if room_en is None:
-      matched_key = self._lookup_room_key(room_type, _ROOM_EN_NAMES)
+      matched_key = lookup_room_key(room_type, _ROOM_EN_NAMES)
       if matched_key:
         base_name = _ROOM_EN_NAMES[matched_key]
         if room_type.startswith(matched_key):
@@ -650,7 +635,7 @@ class ClaudeService:
 
     # 방 유형과 맞지 않는 가구 키워드 제거 (욕실에 소파 등 방지)
     excluded = set()
-    excl_key = self._lookup_room_key(room_type, _ROOM_EXCLUDED_KEYWORDS)
+    excl_key = lookup_room_key(room_type, _ROOM_EXCLUDED_KEYWORDS)
     if excl_key:
       excluded = _ROOM_EXCLUDED_KEYWORDS[excl_key]
 
@@ -665,13 +650,13 @@ class ClaudeService:
 
     # 방 유형별 공간 힌트 (욕실 등 특수 공간에 적합한 요소 강제 포함)
     space_hint = ''
-    hint_key = self._lookup_room_key(room_type, _ROOM_SPACE_HINTS)
+    hint_key = lookup_room_key(room_type, _ROOM_SPACE_HINTS)
     if hint_key:
       space_hint = f'{_ROOM_SPACE_HINTS[hint_key]}, '
 
     # 방 유형별 negative 단서 (해당 공간에 절대 그려선 안 되는 사물 명시)
     negative_hint = ''
-    neg_key = self._lookup_room_key(room_type, _ROOM_NEGATIVE_HINTS)
+    neg_key = lookup_room_key(room_type, _ROOM_NEGATIVE_HINTS)
     if neg_key:
       negative_hint = f', {_ROOM_NEGATIVE_HINTS[neg_key]}'
 

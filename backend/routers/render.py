@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from core.auth import AuthUser, verify_jwt
 from core.config import get_settings
 from core.room_furniture_map import get_furniture_slots
+from core.room_matcher import lookup_room_key
 from models.schemas import ProductOut, RenderRequest, RenderResponse, RoomResultOut, ToneCandidateOut
 from services.claude_service import ClaudeService
 from services.imagen_service import ImagenService
@@ -37,35 +38,31 @@ def _to_tone_out(tone: dict) -> ToneCandidateOut:
   )
 
 
-def _room_slug(room_type: str) -> str:
-  """방 이름을 GCS 경로에 사용 가능한 슬러그로 변환한다.
+_ROOM_SLUG_MAP = {
+  '거실': 'livingroom',
+  '주방': 'kitchen',
+  '주방/식당': 'kitchen',
+  '안방': 'master_bedroom',
+  '침실': 'bedroom',
+  '욕실': 'bathroom',
+  '발코니': 'balcony',
+  '발코나': 'balcony',
+  '현관': 'entrance',
+  '다용도실': 'utility',
+  '알파룸': 'alpha_room',
+  '드레스룸': 'dressroom',
+}
 
-  매칭 우선순위: 정확 → endswith(부부욕실→욕실) → startswith(침실2→침실)
-  """
-  slug_map = {
-    '거실': 'livingroom',
-    '주방': 'kitchen',
-    '주방/식당': 'kitchen',
-    '안방': 'master_bedroom',
-    '침실': 'bedroom',
-    '욕실': 'bathroom',
-    '발코니': 'balcony',
-    '발코나': 'balcony',
-    '현관': 'entrance',
-    '다용도실': 'utility',
-    '알파룸': 'alpha_room',
-    '드레스룸': 'dressroom',
-  }
-  if room_type in slug_map:
-    return slug_map[room_type]
-  for key, slug in slug_map.items():
-    if room_type.endswith(key):
-      return slug
-  for key, slug in slug_map.items():
-    if room_type.startswith(key):
-      suffix = room_type[len(key):]
-      return f'{slug}{suffix}'
-  return 'room'
+
+def _room_slug(room_type: str) -> str:
+  """방 이름을 GCS 경로에 사용 가능한 슬러그로 변환한다. (침실2 → bedroom2)"""
+  key = lookup_room_key(room_type, _ROOM_SLUG_MAP)
+  if key is None:
+    return 'room'
+  slug = _ROOM_SLUG_MAP[key]
+  if room_type != key and room_type.startswith(key):
+    return f'{slug}{room_type[len(key):]}'
+  return slug
 
 
 def _build_product_query(room: dict, tone: dict) -> str:

@@ -1,3 +1,5 @@
+from core.room_matcher import lookup_room_key
+
 # 방 유형별 추천 가구 슬롯 정의
 # 이케아 한국 판매 카테고리 기준으로 정의 (수전·타일 등 이케아 미판매 품목 제외)
 ROOM_FURNITURE_SLOTS: dict[str, list[str]] = {
@@ -19,17 +21,6 @@ DEFAULT_FURNITURE_SLOTS: list[str] = ['가구', '조명', '러그']
 
 
 def get_furniture_slots(room_type: str) -> list[str]:
-  """방 유형에 맞는 가구 슬롯 목록을 반환한다.
-
-  매칭 우선순위: 정확 매칭 → endswith(부부욕실→욕실) → startswith(침실2→침실)
-  미지 방 유형이면 기본값 반환.
-  """
-  if room_type in ROOM_FURNITURE_SLOTS:
-    return ROOM_FURNITURE_SLOTS[room_type]
-  for key, slots in ROOM_FURNITURE_SLOTS.items():
-    if room_type.endswith(key):
-      return slots
-  for key, slots in ROOM_FURNITURE_SLOTS.items():
-    if room_type.startswith(key):
-      return slots
-  return DEFAULT_FURNITURE_SLOTS
+  """방 유형에 맞는 가구 슬롯 목록을 반환한다. 미지 방 유형이면 기본값 반환."""
+  key = lookup_room_key(room_type, ROOM_FURNITURE_SLOTS)
+  return ROOM_FURNITURE_SLOTS[key] if key else DEFAULT_FURNITURE_SLOTS
