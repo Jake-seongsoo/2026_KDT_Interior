@@ -102,6 +102,7 @@ models/       ← Pydantic 스키마 (schemas.py 단일 파일)
 /tones/[sessionId]     ← 톤 선택 (6개 카드)
 /render/[sessionId]    ← 렌더링 대기
 /result/[id]           ← 방별 결과 (RoomTabs + ProductGrid + SvgLayoutViewer)
+/history               ← 분석 기록 조회 (HistorySessionCard, 로그인 사용자 전용)
 ```
 
 ### 인증 흐름
@@ -186,7 +187,7 @@ models/       ← Pydantic 스키마 (schemas.py 단일 파일)
 ### Phase 3 — 완성 (진행 중, 2026.06)
 - F007 정밀화 맞춤 렌더링 ✅ (2026-05-23): 결과 페이지 "정밀화" 버튼 → RefinementModal(shadcn Dialog) → `/render` 재호출. 정밀화 파라미터: budget_10k_won, family_type, style_keywords(최대3), keep_appliances. DB: recommendation_results.refinement_params jsonb 컬럼 추가 (0003_add_refinement_params.sql). shadcn UI 정식 도입(components.json, dialog, label).
 - F008 공유 링크 — 미구현 (DB 테이블만 존재)
-- F011 분석 기록 조회 — 미구현
+- F011 분석 기록 조회 ✅ (2026-06): `GET /history` → `/history` 페이지. 세션(도면) 최근 20개 + 결과 중첩, 도면 썸네일은 Signed URL(RISK-02 준수). 본인 user_id 필터로 타인 데이터 차단. SupabaseService 일괄 조회(N+1 없음), useAuthUser 훅으로 로그인 상태 공통화.
 - fc10: Vision 정확도 80%+ 달성 후 벽 분류 기능 (SNS 이미지 → 내 방 적용 가능 여부)
 
 ## DB 스키마 주요 테이블
