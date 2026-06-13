@@ -1,5 +1,11 @@
 import { createClient } from '@/lib/supabase/client'
-import type { AnalyzeResponse, HistoryResponse, RenderRequest, RenderResponse } from '@/types/api'
+import type {
+  AnalyzeResponse,
+  HistoryResponse,
+  RenderRequest,
+  RenderResponse,
+  ShareCreateResponse,
+} from '@/types/api'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -124,6 +130,37 @@ export async function getSessionHistory(): Promise<HistoryResponse> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(err.detail ?? '분석 기록을 불러오지 못했습니다.')
+  }
+
+  return res.json()
+}
+
+/** 결과의 공유 링크를 생성한다 (본인 결과만 — 로그인 필요). */
+export async function createShareLink(resultId: string): Promise<ShareCreateResponse> {
+  const headers = await getAuthHeaders()
+
+  const res = await fetch(`${BASE}/share`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify({ result_id: resultId }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? '공유 링크 생성에 실패했습니다.')
+  }
+
+  return res.json()
+}
+
+/** 공유 링크로 결과를 조회한다 (비로그인 — SSR 서버 컴포넌트에서 호출).
+ *  no-store로 매 요청 최신 조회(조회수 증가 반영), 인증 헤더 없음. */
+export async function getSharedResult(shareId: string): Promise<RenderResponse> {
+  const res = await fetch(`${BASE}/share/${shareId}`, { cache: 'no-store' })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? '공유된 결과를 불러오지 못했습니다.')
   }
 
   return res.json()

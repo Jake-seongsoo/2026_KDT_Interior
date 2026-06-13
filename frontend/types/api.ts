@@ -94,6 +94,12 @@ export interface HealthResponse {
   environment: string
 }
 
+// ── 공유 링크 (F008) ───────────────────────────────────────
+
+export interface ShareCreateResponse {
+  share_id: string
+}
+
 // ── 분석 기록 조회 (F011) ──────────────────────────────────
 
 export interface HistoryResultItem {
