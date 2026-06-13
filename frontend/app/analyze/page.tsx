@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AuthRequiredError, postAnalyze, postAnalyzeCustom } from '@/lib/api'
+import { formatEstimatedTime } from '@/lib/format'
 import { modeStorage, customInputStorage, referenceStorage, uploadStorage } from '@/lib/session-storage'
 import { useStepFlow } from '@/hooks/useStepFlow'
+import { LoadingDots } from '@/components/common/LoadingDots'
+import { ProgressErrorBox } from '@/components/common/ProgressErrorBox'
 import { StepProgress } from '@/components/common/StepProgress'
-import { Button } from '@/components/ui/button'
 
 const AUTO_STEPS = [
   '도면 업로드 중',
@@ -23,13 +24,6 @@ const CUSTOM_STEPS = [
 const STEP_ESTIMATES_SECONDS = [3, 12, 55]
 
 const totalEstimatedSeconds = STEP_ESTIMATES_SECONDS.reduce((a, b) => a + b, 0)
-
-function formatEstimatedTime(seconds: number): string {
-  if (seconds < 60) return `약 ${seconds}초`
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return secs === 0 ? `약 ${mins}분` : `약 ${mins}분 ${secs}초`
-}
 
 export default function AnalyzePage() {
   const router = useRouter()
@@ -106,22 +100,7 @@ export default function AnalyzePage() {
       <div className='w-full max-w-md'>
         {/* 헤더 */}
         <div className='mb-10 text-center'>
-          <div className='mb-4 flex justify-center gap-1.5'>
-            {[0, 1, 2].map((i) => (
-              <span
-                key={i}
-                className='h-1.5 w-1.5 rounded-full bg-amber-500'
-                style={{
-                  animationName: 'pulse',
-                  animationDuration: '1.5s',
-                  animationDelay: `${i * 0.2}s`,
-                  animationIterationCount: 'infinite',
-                  animationTimingFunction: 'ease-in-out',
-                  opacity: 0.6,
-                }}
-              />
-            ))}
-          </div>
+          <LoadingDots />
           <p className='mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-600'>
             Analyzing
           </p>
@@ -135,14 +114,7 @@ export default function AnalyzePage() {
         </div>
 
         {error ? (
-          <div className='space-y-4'>
-            <p className='rounded-xl border border-red-900/30 bg-red-950/40 p-4 text-sm text-red-300'>
-              {error}
-            </p>
-            <Button asChild className='w-full bg-stone-700 text-white hover:bg-stone-600'>
-              <Link href='/'>다시 시도</Link>
-            </Button>
-          </div>
+          <ProgressErrorBox message={error} actionHref='/' actionLabel='다시 시도' />
         ) : (
           <StepProgress
             steps={steps}

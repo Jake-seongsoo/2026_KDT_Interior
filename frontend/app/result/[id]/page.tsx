@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { Home, Palette, Settings2 } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { AuthRequiredError, getRenderResult } from '@/lib/api'
+import { ErrorScreen } from '@/components/common/ErrorScreen'
+import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { LayoutCanvas } from '@/components/result/LayoutCanvas'
 import { RoomTabs } from '@/components/result/RoomTabs'
 import { RefinementModal } from '@/components/result/RefinementModal'
@@ -94,26 +96,8 @@ export default function ResultPage() {
     router.push(`/render/${sessionId}`)
   }
 
-  if (error) {
-    return (
-      <div className='flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 bg-[#F5EFE5]'>
-        <div className='w-full max-w-md space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm'>
-          <p className='rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700'>{error}</p>
-          <Button asChild className='w-full'>
-            <Link href='/'>새 도면 분석하기</Link>
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  if (!data) {
-    return (
-      <div className='flex min-h-[calc(100vh-4rem)] items-center justify-center bg-[#F5EFE5]'>
-        <p className='text-sm text-stone-400'>불러오는 중...</p>
-      </div>
-    )
-  }
+  if (error) return <ErrorScreen message={error} />
+  if (!data) return <LoadingScreen />
 
   const tone = data.selected_tone
 
