@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from routers.render import (
   _build_product_query,
   _room_slug,
+  _to_product_out,
   _to_tone_out,
   _upload_render_image,
   _verify_session_and_tone,
@@ -60,6 +61,39 @@ class TestBuildProductQuery:
     tone = {'keywords': ['미니멀'], 'name': ''}
     query = _build_product_query(room, tone)
     assert '가구' in query
+
+
+# ── _to_product_out 테스트 ─────────────────────────────────────────────────
+
+class TestToProductOut:
+  def test_full_fields_mapped(self):
+    p = {
+      'naver_product_id': 'ikea-123',
+      'name': '소파',
+      'category': '거실가구',
+      'slot': '소파',
+      'price_min': 100000,
+      'price_max': 150000,
+      'image_url': 'http://img',
+      'purchase_url': 'http://buy',
+      'match_score': 0.9,
+      'match_reasons': ['색상 일치'],
+      'source': 'ikea',
+    }
+    out = _to_product_out(p)
+    assert out.name == '소파'
+    assert out.slot == '소파'
+    assert out.match_score == 0.9
+    assert out.source == 'ikea'
+
+  def test_missing_optional_fields_default(self):
+    # name 외 누락 필드는 안전한 기본값으로 채워진다
+    out = _to_product_out({'name': '의자'})
+    assert out.name == '의자'
+    assert out.price_min == 0
+    assert out.price_max == 0
+    assert out.slot is None
+    assert out.source is None
 
 
 # ── _to_tone_out 테스트 ────────────────────────────────────────────────────

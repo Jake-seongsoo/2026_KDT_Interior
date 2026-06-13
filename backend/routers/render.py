@@ -224,6 +224,137 @@ async def _upload_render_image(
   return render_url, gcs_path, rationale
 
 
+def _to_product_out(p: dict) -> ProductOut:
+  """상품 dict를 ProductOut으로 변환한다 (렌더링 응답용 — 전체 필드 포함)."""
+  return ProductOut(
+    naver_product_id=p.get('naver_product_id'),
+    name=p['name'],
+    category=p.get('category'),
+    slot=p.get('slot'),
+    price_min=p.get('price_min', 0),
+    price_max=p.get('price_max', 0),
+    image_url=p.get('image_url'),
+    purchase_url=p.get('purchase_url'),
+    match_score=p.get('match_score'),
+    match_reasons=p.get('match_reasons'),
+    source=p.get('source'),
+  )
+
+
+async def _render_images_and_products(
+  claude: ClaudeService,
+  imagen: ImagenService,
+  ikea: IkeaService,
+  rooms: list[dict],
+  tone: dict,
+  imagen_specs: list[dict],
+  use_multi_furniture: bool,
+) -> tuple[list, list[list[dict]], list[list[dict]], list[dict | None]]:
+  """Imagen 렌더링과 상품 검색을 Phase 설정에 따라 수행한다.
+
+  반환: (image_results, product_results, furniture_queries_per_room, visual_attrs_per_room)
+  Phase 2(multi_furniture)는 가구별 검색어 + Vision 재분석을 사용하고,
+  미설정 시 방별 단일 이케아 쿼리로 폴백한다.
+  """
+  furniture_queries_per_room: list[list[dict]] = [[] for _ in rooms]
+  visual_attrs_per_room: list[dict | None] = [None] * len(rooms)
+
+  if use_multi_furniture:
+    # Phase 2: Claude로 가구별 검색어 생성 → Imagen 병렬 실행 → 방별 Vision+이케아 병렬
+    furniture_queries_per_room, image_results = await asyncio.gather(
+      _build_furniture_queries(claude, rooms, tone),
+      imagen.render_rooms_parallel(imagen_specs),
+    )
+
+    use_vision = get_settings().ENABLE_VISION_RERANK
+    room_tasks = [
+      _process_room_vision_and_products(
+        room_queries=furniture_queries_per_room[i],
+        img_bytes=image_results[i] if i < len(image_results) else Exception('인덱스 초과'),
+        claude=claude,
+        ikea=ikea,
+        use_vision=use_vision,
+      )
+      for i in range(len(rooms))
+    ]
+    room_task_results = await asyncio.gather(*room_tasks, return_exceptions=True)
+
+    product_results: list[list[dict]] = []
+    for i, task_result in enumerate(room_task_results):
+      if isinstance(task_result, Exception):
+        product_results.append([])
+      else:
+        flat, visual_attrs = task_result
+        product_results.append(flat)
+        visual_attrs_per_room[i] = visual_attrs
+  else:
+    # 단일 쿼리 경로 — 이케아만 사용
+    product_queries = [_build_product_query(room, tone) for room in rooms]
+    image_results, ikea_only = await asyncio.gather(
+      imagen.render_rooms_parallel(imagen_specs),
+      asyncio.gather(*[ikea.search_products(q, display=5) for q in product_queries], return_exceptions=True),
+    )
+    product_results = [
+      prods if not isinstance(prods, Exception) else []
+      for prods in ikea_only
+    ]
+
+  return image_results, product_results, furniture_queries_per_room, visual_attrs_per_room
+
+
+async def _persist_room_results(
+  db: SupabaseService,
+  storage: StorageService,
+  rooms: list[dict],
+  imagen_specs: list[dict],
+  result_id: str,
+  image_results: list,
+  product_results: list[list[dict]],
+  furniture_queries_per_room: list[list[dict]],
+  visual_attrs_per_room: list[dict | None],
+  use_multi_furniture: bool,
+) -> list[RoomResultOut]:
+  """방별로 렌더 이미지 GCS 업로드 + room_renders/products 저장 + 응답 조립."""
+  room_results_out: list[RoomResultOut] = []
+  for i, (room, spec) in enumerate(zip(rooms, imagen_specs)):
+    img_result = image_results[i] if i < len(image_results) else Exception('인덱스 초과')
+    prod_result = product_results[i] if i < len(product_results) else []
+
+    render_url, render_gcs_path, rationale = await _upload_render_image(
+      img_result, room, i, spec['rationale'], result_id, storage
+    )
+
+    render_row = await db.insert_room_render(
+      result_id=result_id,
+      room_id=room['id'],
+      room_type=room['room_type'],
+      rationale=rationale,
+      render_gcs_path=render_gcs_path,
+      prompt=spec['prompt'],
+      furniture_queries=furniture_queries_per_room[i] if use_multi_furniture else None,
+    )
+
+    products_clean: list[dict] = []
+    if isinstance(prod_result, Exception):
+      logger.warning('상품 검색 실패 (%s): %s', room['room_type'], prod_result)
+    else:
+      products_clean = prod_result if isinstance(prod_result, list) else []
+
+    await db.insert_products(render_row['id'], products_clean)
+
+    room_results_out.append(
+      RoomResultOut(
+        room_id=room['id'],
+        room_type=room['room_type'],
+        rationale=rationale,
+        render_url=render_url,
+        visual_attributes=visual_attrs_per_room[i],
+        products=[_to_product_out(p) for p in products_clean],
+      )
+    )
+  return room_results_out
+
+
 @router.post('/render', response_model=RenderResponse)
 async def render(
   body: RenderRequest,
@@ -260,8 +391,7 @@ async def render(
     for room in rooms
   ]
 
-  settings = get_settings()
-  use_multi_furniture = settings.ENABLE_MULTI_FURNITURE_RECO
+  use_multi_furniture = get_settings().ENABLE_MULTI_FURNITURE_RECO
 
   logger.info(
     '렌더링 시작: 방 %d개 (session=%s, multi_furniture=%s)',
@@ -279,108 +409,22 @@ async def render(
   )
   result_id = result['id']
 
-  furniture_queries_per_room: list[list[dict]] = [[] for _ in rooms]
+  # 1) Imagen 렌더링 + 상품 검색 (Phase 설정에 따라 분기)
+  (
+    image_results,
+    product_results,
+    furniture_queries_per_room,
+    visual_attrs_per_room,
+  ) = await _render_images_and_products(
+    claude, imagen, ikea, rooms, tone, imagen_specs, use_multi_furniture,
+  )
 
-  visual_attrs_per_room: list[dict | None] = [None] * len(rooms)
-
-  if use_multi_furniture:
-    # Phase 2: Claude로 가구별 검색어 생성 → Imagen 병렬 실행 → 방별 Vision+Naver 병렬
-    furniture_queries_per_room, image_results = await asyncio.gather(
-      _build_furniture_queries(claude, rooms, tone),
-      imagen.render_rooms_parallel(imagen_specs),
-    )
-
-    use_vision = settings.ENABLE_VISION_RERANK
-
-    # 방별로 Vision 분석 + Naver 검색을 동시에 수행
-    room_tasks = [
-      _process_room_vision_and_products(
-        room_queries=furniture_queries_per_room[i],
-        img_bytes=image_results[i] if i < len(image_results) else Exception('인덱스 초과'),
-        claude=claude,
-        ikea=ikea,
-        use_vision=use_vision,
-      )
-      for i in range(len(rooms))
-    ]
-    room_task_results = await asyncio.gather(*room_tasks, return_exceptions=True)
-
-    product_results: list[list[dict]] = []
-    for i, task_result in enumerate(room_task_results):
-      if isinstance(task_result, Exception):
-        product_results.append([])
-      else:
-        flat, visual_attrs = task_result
-        product_results.append(flat)
-        visual_attrs_per_room[i] = visual_attrs
-
-  else:
-    # 단일 쿼리 경로 — 이케아만 사용
-    product_queries = [_build_product_query(room, tone) for room in rooms]
-    image_results, ikea_only = await asyncio.gather(
-      imagen.render_rooms_parallel(imagen_specs),
-      asyncio.gather(*[ikea.search_products(q, display=5) for q in product_queries], return_exceptions=True),
-    )
-    product_results = [
-      prods if not isinstance(prods, Exception) else []
-      for prods in ikea_only
-    ]
-
-  # 방별 결과 조립 + GCS 업로드 + DB 저장
-  room_results_out: list[RoomResultOut] = []
-  for i, (room, spec) in enumerate(zip(rooms, imagen_specs)):
-    img_result = image_results[i] if i < len(image_results) else Exception('인덱스 초과')
-    prod_result = product_results[i] if i < len(product_results) else []
-
-    render_url, render_gcs_path, rationale = await _upload_render_image(
-      img_result, room, i, spec['rationale'], result_id, storage
-    )
-
-    # room_renders 저장
-    render_row = await db.insert_room_render(
-      result_id=result_id,
-      room_id=room['id'],
-      room_type=room['room_type'],
-      rationale=rationale,
-      render_gcs_path=render_gcs_path,
-      prompt=spec['prompt'],
-      furniture_queries=furniture_queries_per_room[i] if use_multi_furniture else None,
-    )
-
-    # 상품 저장
-    products_clean: list[dict] = []
-    if isinstance(prod_result, Exception):
-      logger.warning('상품 검색 실패 (%s): %s', room['room_type'], prod_result)
-    else:
-      products_clean = prod_result if isinstance(prod_result, list) else []
-
-    await db.insert_products(render_row['id'], products_clean)
-
-    room_results_out.append(
-      RoomResultOut(
-        room_id=room['id'],
-        room_type=room['room_type'],
-        rationale=rationale,
-        render_url=render_url,
-        visual_attributes=visual_attrs_per_room[i],
-        products=[
-          ProductOut(
-            naver_product_id=p.get('naver_product_id'),
-            name=p['name'],
-            category=p.get('category'),
-            slot=p.get('slot'),
-            price_min=p.get('price_min', 0),
-            price_max=p.get('price_max', 0),
-            image_url=p.get('image_url'),
-            purchase_url=p.get('purchase_url'),
-            match_score=p.get('match_score'),
-            match_reasons=p.get('match_reasons'),
-            source=p.get('source'),
-          )
-          for p in products_clean
-        ],
-      )
-    )
+  # 2) 방별 결과 조립 + GCS 업로드 + DB 저장
+  room_results_out = await _persist_room_results(
+    db, storage, rooms, imagen_specs, result_id,
+    image_results, product_results, furniture_queries_per_room,
+    visual_attrs_per_room, use_multi_furniture,
+  )
 
   # SVG 배치도 생성 (동기, 빠름)
   svg_layout = build_layout_svg(rooms)
