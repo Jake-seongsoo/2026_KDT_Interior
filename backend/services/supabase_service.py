@@ -72,6 +72,21 @@ class SupabaseService:
       raise ValueError(f'세션을 찾을 수 없습니다: {session_id}')
     return resp.data[0]
 
+  async def get_sessions_by_user(self, user_id: str, limit: int = 20) -> list[dict]:
+    """사용자의 분석 세션을 최근순으로 조회한다 (기록 조회용).
+
+    idx_sessions_user_created (user_id, created_at desc) 인덱스를 사용한다.
+    """
+    resp = (
+      self._db.table('analysis_sessions')
+      .select('*')
+      .eq('user_id', user_id)
+      .order('created_at', desc=True)
+      .limit(limit)
+      .execute()
+    )
+    return resp.data
+
   # ── rooms ──────────────────────────────────────────────────
 
   async def insert_rooms(self, session_id: str, rooms_raw: list[dict]) -> list[dict]:
@@ -117,6 +132,22 @@ class SupabaseService:
     )
     return resp.data
 
+  async def get_rooms_by_sessions(self, session_ids: list[str]) -> list[dict]:
+    """여러 세션의 방을 일괄 조회한다 (기록 목록의 방 요약용, N+1 방지).
+
+    반환 행에는 session_id가 포함되어 호출부에서 세션별로 묶을 수 있다.
+    """
+    if not session_ids:
+      return []
+    resp = (
+      self._db.table('rooms')
+      .select('session_id, room_type, priority')
+      .in_('session_id', session_ids)
+      .order('priority')
+      .execute()
+    )
+    return resp.data
+
   # ── tone_candidates ────────────────────────────────────────
 
   async def insert_tone_candidates(self, session_id: str, tones: list[dict]) -> list[dict]:
@@ -149,6 +180,18 @@ class SupabaseService:
       .select('*')
       .eq('session_id', session_id)
       .order('tone_index')
+      .execute()
+    )
+    return resp.data
+
+  async def get_tones_by_ids(self, tone_ids: list[str]) -> list[dict]:
+    """톤 id 목록으로 (id, name)을 일괄 조회한다 (결과 목록의 톤 이름 매핑용)."""
+    if not tone_ids:
+      return []
+    resp = (
+      self._db.table('tone_candidates')
+      .select('id, name')
+      .in_('id', tone_ids)
       .execute()
     )
     return resp.data
@@ -188,6 +231,22 @@ class SupabaseService:
     if not resp.data:
       raise ValueError(f'결과를 찾을 수 없습니다: {result_id}')
     return resp.data[0]
+
+  async def get_results_by_sessions(self, session_ids: list[str]) -> list[dict]:
+    """여러 세션의 렌더링 결과를 최근순으로 일괄 조회한다 (기록 목록 중첩용, N+1 방지).
+
+    톤 이름은 selected_tone_id로 get_tones_by_ids를 호출해 호출부에서 매핑한다.
+    """
+    if not session_ids:
+      return []
+    resp = (
+      self._db.table('recommendation_results')
+      .select('id, session_id, selected_tone_id, created_at')
+      .in_('session_id', session_ids)
+      .order('created_at', desc=True)
+      .execute()
+    )
+    return resp.data
 
   # ── room_renders ───────────────────────────────────────────
 
