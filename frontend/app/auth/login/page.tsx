@@ -1,7 +1,6 @@
 'use client'
 
 import Image from 'next/image'
-import { LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 
@@ -30,12 +29,6 @@ export default function LoginPage() {
             priority
             className='mx-auto mb-5 h-auto w-36'
           />
-          <h1
-            className='text-2xl font-bold text-stone-900'
-            style={{ fontFamily: 'var(--font-serif)' }}
-          >
-            로그인
-          </h1>
           <p className='mt-2 text-sm leading-6 text-stone-500'>
             AI 분석과 렌더링 요청을 위해
             <br />
