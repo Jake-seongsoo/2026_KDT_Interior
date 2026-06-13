@@ -6,6 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 AI 인테리어 추천 서비스 — 도면 이미지 업로드 → Claude Vision 분석 → 2026 트렌드 기반 톤 6개 선택 → Imagen 방별 렌더링 + 이케아 상품 추천. KDT 포트폴리오 겸 개인 실사용 목적.
 
+## 코드 일관성 규칙
+
+리팩토링 중 반복 발견된 문제의 재발을 막기 위한 규칙. (DRY·KISS·YAGNI의 프로젝트 구체화)
+
+- **기능 전환·제거 시 코드·문서 동시 정리**: 기능을 다른 것으로 전환·대체하면 같은 작업 단위에서 (1) 미사용 코드·테스트 삭제 (2) CLAUDE.md의 관련 결정 문구 갱신까지 완료한다. "삭제 대상"으로만 표시하고 남겨두지 않는다.
+- **동작·UI 문구 변경 시 테스트 동기화**: 동작이나 UI 문구를 변경하면 그에 의존하는 유닛/E2E 테스트도 같은 커밋에서 갱신한다. 상시 실패하거나 구현과 어긋난(drift) 테스트를 방치하지 않는다. 텍스트 매칭보다 `data-testid`·role 기반 셀렉터를 우선한다.
+- **정의된 토큰·헬퍼 우선**: 이미 정의된 자원을 임의값으로 재작성하지 않는다. 색상은 `globals.css @theme` 토큰(`bg-ivory` 등), sessionStorage 접근은 `lib/session-storage.ts` 헬퍼를 사용한다.
+
 ## 기술 스택
 
 | 계층 | 기술 |
