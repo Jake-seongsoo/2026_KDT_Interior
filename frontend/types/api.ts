@@ -93,3 +93,25 @@ export interface HealthResponse {
   status: string
   environment: string
 }
+
+// ── 분석 기록 조회 (F011) ──────────────────────────────────
+
+export interface HistoryResultItem {
+  result_id: string
+  tone_name: string
+  created_at: string  // ISO8601
+}
+
+export interface HistorySessionItem {
+  session_id: string
+  created_at: string
+  floor_area_pyeong: number
+  status: string                     // 'analyzing' | 'completed' | 'failed'
+  room_summary: string               // 예: '거실·주방·안방'
+  thumbnail_url?: string | null      // 도면 Signed URL (15분 TTL)
+  results: HistoryResultItem[]       // 최근순 렌더 결과
+}
+
+export interface HistoryResponse {
+  sessions: HistorySessionItem[]
+}

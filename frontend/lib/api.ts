@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import type { AnalyzeResponse, RenderRequest, RenderResponse } from '@/types/api'
+import type { AnalyzeResponse, HistoryResponse, RenderRequest, RenderResponse } from '@/types/api'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -111,6 +111,19 @@ export async function getRenderResult(resultId: string): Promise<RenderResponse>
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(err.detail ?? '렌더링 결과를 불러오지 못했습니다.')
+  }
+
+  return res.json()
+}
+
+export async function getSessionHistory(): Promise<HistoryResponse> {
+  const headers = await getAuthHeaders()
+
+  const res = await fetch(`${BASE}/history`, { headers })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? '분석 기록을 불러오지 못했습니다.')
   }
 
   return res.json()
