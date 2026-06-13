@@ -139,27 +139,22 @@ gcloud run services update interior-api --min-instances=0
 
 ## 배포
 
-### 백엔드 (GCP Cloud Run)
+> 상세한 단계별 절차·재배포·롤백·운영 가이드는 **[docs/배포_운영.md](docs/배포_운영.md)** 참조.
 
-```bash
-cd backend
-docker build -t gcr.io/${GCP_PROJECT_ID}/interior-api .
-docker push gcr.io/${GCP_PROJECT_ID}/interior-api
+### 백엔드 (GCP Cloud Run) — GitHub Actions 자동 배포
 
-gcloud run deploy interior-api \
-  --image gcr.io/${GCP_PROJECT_ID}/interior-api \
-  --region asia-northeast3 \
-  --platform managed \
-  --allow-unauthenticated \
-  --set-env-vars "ANTHROPIC_API_KEY=...,SUPABASE_URL=...,..."
-```
+`master` 브랜치에 `backend/**` 변경이 푸시되면 `.github/workflows/deploy-backend.yml`이
+Cloud Build로 이미지를 빌드해 Cloud Run에 자동 배포한다. (수동 실행: Actions 탭 → Run workflow)
+
+최초 1회 수동 배포·권한 설정은 [docs/배포_운영.md](docs/배포_운영.md) 0~2장 참조.
 
 ### 프론트엔드 (Vercel)
 
-Vercel 대시보드에서 GitHub 연동 후 자동 배포. 환경변수 설정:
+Vercel 대시보드에서 GitHub 연동 후 자동 배포 (Root Directory = `frontend`). 환경변수:
+- `NEXT_PUBLIC_API_URL` (Cloud Run URL)
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_API_URL` (Cloud Run URL)
+- `NEXT_PUBLIC_ENVIRONMENT` (`production`)
 
 ---
 

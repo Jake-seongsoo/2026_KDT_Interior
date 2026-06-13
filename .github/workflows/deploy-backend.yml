@@ -1,0 +1,87 @@
+name: Deploy Backend to Cloud Run
+
+# 백엔드(backend/) 변경이 master에 푸시되면 GCP Cloud Run으로 자동 배포한다.
+# 수동 실행도 가능 (Actions 탭 > Run workflow).
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+# 중복 배포 방지: 같은 그룹의 이전 실행은 취소
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: true
+
+env:
+  SERVICE: interior-api
+  REGION: asia-northeast3
+  # Cloud Run 런타임 서비스 계정 (Vertex AI·Storage 권한 보유 계정)
+  RUNTIME_SA: vertex-express@gen-lang-client-0635611562.iam.gserviceaccount.com
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      # GitHub Secret(GCP_SA_KEY)에 등록한 service-account.json 내용으로 GCP 인증
+      - name: GCP 인증
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: gcloud 설정
+        uses: google-github-actions/setup-gcloud@v2
+
+      # backend/ 소스에서 Cloud Build로 이미지 빌드 후 Cloud Run 배포 (Dockerfile 자동 감지)
+      - name: Cloud Run 배포
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          source: ./backend
+          # --service-account: 런타임 SA 지정 (Imagen/GCS 권한·Signed URL 서명용)
+          # --memory: Pillow·이미지 처리 여유, --timeout: 렌더링 장시간 작업 대응
+          flags: >-
+            --allow-unauthenticated
+            --service-account=${{ env.RUNTIME_SA }}
+            --memory=1Gi
+            --cpu=1
+            --timeout=300
+            --min-instances=0
+            --max-instances=4
+          # 민감하지 않은 설정 + GitHub Secrets에서 주입하는 런타임 값
+          # (콤마 포함 값은 줄바꿈 구분이라 안전 — CORS_ORIGINS 등)
+          # GOOGLE_APPLICATION_CREDENTIALS를 비워 ADC(런타임 SA)로 폴백시킨다.
+          env_vars: |
+            ENVIRONMENT=production
+            CLAUDE_MODEL=claude-sonnet-4-6
+            GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
+            GCP_REGION=asia-northeast3
+            GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }}
+            GCS_RENDER_BUCKET_NAME=${{ secrets.GCS_RENDER_BUCKET_NAME }}
+            GOOGLE_APPLICATION_CREDENTIALS=
+            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+            SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+            SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}
+            CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}
+            SIGNED_URL_TTL_MINUTES=15
+            CACHE_TTL_HOURS=24
+            ENABLE_MULTI_FURNITURE_RECO=true
+            ENABLE_VISION_RERANK=true
+
+      # 배포 직후 헬스체크로 정상 기동 확인
+      - name: 헬스체크
+        run: |
+          echo "배포 URL: ${{ steps.deploy.outputs.url }}"
+          curl -fsS "${{ steps.deploy.outputs.url }}/health" && echo "" && echo "헬스체크 통과"

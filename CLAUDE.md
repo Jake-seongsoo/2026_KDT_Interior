@@ -198,14 +198,11 @@ models/       ← Pydantic 스키마 (schemas.py 단일 파일)
 
 ## 배포
 
-```bash
-# 백엔드 (Cloud Run)
-cd backend
-docker build -t gcr.io/${GCP_PROJECT_ID}/interior-api .
-docker push gcr.io/${GCP_PROJECT_ID}/interior-api
-gcloud run deploy interior-api --image ... --region asia-northeast3
+> 단계별 절차·재배포·롤백·운영은 `docs/배포_운영.md` 참조.
 
-# 프론트엔드: Vercel 대시보드에서 자동 배포 (main 브랜치 push)
-```
+- **백엔드 (Cloud Run)**: `.github/workflows/deploy-backend.yml`이 `master` 브랜치 `backend/**` 변경 시 자동 배포 (Cloud Build로 `backend/Dockerfile` 빌드 → `gcloud run deploy`). GCP 인증은 GitHub Secret `GCP_SA_KEY`. 런타임은 ADC(`GOOGLE_APPLICATION_CREDENTIALS` 비움) → 런타임 SA `vertex-express` 사용.
+- **프론트엔드 (Vercel)**: Git 연동 자동 배포 (Root Directory = `frontend`). `NEXT_PUBLIC_API_URL`에 Cloud Run URL 주입.
+- **CORS 주의**: 프론트 도메인을 백엔드 `CORS_ORIGINS`(GitHub Secret + Cloud Run env 양쪽)에 추가해야 호출 통과.
+- **Signed URL**: Cloud Run 런타임 SA에 `roles/iam.serviceAccountTokenCreator`(자기 자신) 부여 필요 — 미부여 시 도면 썸네일·렌더 이미지 URL 실패.
 
 Cold Start 대응: 발표 30분 전 `GET /health` 워밍업 호출, Cloud Run 최소 인스턴스 1 설정.
