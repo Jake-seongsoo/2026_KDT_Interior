@@ -487,15 +487,7 @@ async def get_render_result(
         else _PLACEHOLDER_URL
       ),
       products=[
-        ProductOut(
-          naver_product_id=p.get('naver_product_id'),
-          name=p['name'],
-          category=p.get('category'),
-          price_min=p.get('price_min', 0),
-          price_max=p.get('price_max', 0),
-          image_url=p.get('image_url'),
-          purchase_url=p.get('purchase_url'),
-        )
+        _to_product_out(p)
         for p in products_by_render_id.get(render_row['id'], [])
       ],
     )
