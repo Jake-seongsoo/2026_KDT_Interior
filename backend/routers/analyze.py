@@ -4,7 +4,7 @@ import logging
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
-from core.auth import AuthUser, verify_jwt
+from core.auth import AuthUser, ensure_owner, verify_jwt
 from models.schemas import AnalyzeResponse, RoomOut, ToneCandidateOut
 from services.claude_service import ClaudeService
 from services.storage_service import StorageService
@@ -117,11 +117,7 @@ async def get_analyze_result(
   except ValueError as e:
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
-  if session.get('user_id') != user.user_id:
-    raise HTTPException(
-      status_code=status.HTTP_403_FORBIDDEN,
-      detail='이 세션에 접근할 권한이 없습니다.',
-    )
+  ensure_owner(user, session, detail='이 세션에 접근할 권한이 없습니다.')
 
   rooms_data = await db.get_rooms_by_session(session_id)
   tones_data = await db.get_tone_candidates_by_session(session_id)

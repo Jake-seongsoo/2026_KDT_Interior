@@ -21,6 +21,24 @@ class AuthUser(BaseModel):
   email: str | None = None
 
 
+def ensure_owner(
+  user: AuthUser,
+  *records: dict,
+  detail: str = '이 리소스에 접근할 권한이 없습니다.',
+) -> None:
+  """주어진 레코드들이 모두 현재 사용자 소유인지 확인한다.
+
+  하나라도 user_id가 일치하지 않으면 403을 발생시킨다.
+  세션·결과 등 소유권 검증이 필요한 모든 라우터의 단일 진입점.
+  """
+  for record in records:
+    if record.get('user_id') != user.user_id:
+      raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=detail,
+      )
+
+
 async def _fetch_supabase_jwks(force_refresh: bool = False) -> list[dict[str, Any]]:
   settings = get_settings()
   if not settings.SUPABASE_URL:

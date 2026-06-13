@@ -4,7 +4,7 @@ import time
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from core.auth import AuthUser, verify_jwt
+from core.auth import AuthUser, ensure_owner, verify_jwt
 from core.config import get_settings
 from core.room_furniture_map import get_furniture_slots
 from core.room_matcher import lookup_room_key
@@ -179,11 +179,7 @@ async def _verify_session_and_tone(
   except ValueError as e:
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
-  if session.get('user_id') != user.user_id:
-    raise HTTPException(
-      status_code=status.HTTP_403_FORBIDDEN,
-      detail='이 세션에 접근할 권한이 없습니다.',
-    )
+  ensure_owner(user, session, detail='이 세션에 접근할 권한이 없습니다.')
 
   rooms = await db.get_render_target_rooms(str(body.session_id))
   if not rooms:
@@ -420,11 +416,7 @@ async def get_render_result(
   except ValueError as e:
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
-  if result.get('user_id') != user.user_id or session.get('user_id') != user.user_id:
-    raise HTTPException(
-      status_code=status.HTTP_403_FORBIDDEN,
-      detail='이 결과에 접근할 권한이 없습니다.',
-    )
+  ensure_owner(user, result, session, detail='이 결과에 접근할 권한이 없습니다.')
 
   try:
     tone = await db.get_tone(result['selected_tone_id'])
