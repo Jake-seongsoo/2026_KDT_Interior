@@ -3,12 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { AuthRequiredError, postRender } from '@/lib/api'
-import { formatEstimatedTime } from '@/lib/format'
 import { refinementStorage, renderStorage, toneStorage } from '@/lib/session-storage'
 import { useStepFlow } from '@/hooks/useStepFlow'
-import { LoadingDots } from '@/components/common/LoadingDots'
-import { ProgressErrorBox } from '@/components/common/ProgressErrorBox'
-import { StepProgress } from '@/components/common/StepProgress'
+import { ProgressPageLayout } from '@/components/common/ProgressPageLayout'
 import type { ToneCandidateOut } from '@/types/api'
 
 const STEPS = [
@@ -78,43 +75,21 @@ export default function RenderPage() {
   }, [sessionId, router])
 
   return (
-    <div className='flex min-h-[calc(100vh-4rem)] items-center justify-center bg-stone-950 px-4 py-10'>
-      <div className='w-full max-w-md'>
-        {/* 헤더 */}
-        <div className='mb-10 text-center'>
-          <LoadingDots />
-          <p className='mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-600'>
-            Rendering
-          </p>
-          <h1
-            className='text-3xl font-bold text-stone-100'
-            style={{ fontFamily: 'var(--font-serif)' }}
-          >
-            방별 제안을 생성하고 있습니다
-          </h1>
-          {toneName && (
-            <p className='mt-3 text-sm text-stone-400'>
-              <span className='text-stone-300'>"{toneName}"</span> 톤으로 렌더링 중
-            </p>
-          )}
-          <p className='mt-1 text-sm text-stone-500'>{formatEstimatedTime(totalEstimatedSeconds)} 정도 소요됩니다.</p>
-        </div>
-
-        {error ? (
-          <ProgressErrorBox
-            message={error}
-            actionHref={`/tones/${sessionId}`}
-            actionLabel='톤 선택으로 돌아가기'
-          />
-        ) : (
-          <StepProgress
-            steps={steps}
-            estimatedSeconds={STEP_ESTIMATES_SECONDS}
-            elapsedSeconds={elapsed}
-            dark
-          />
-        )}
-      </div>
-    </div>
+    <ProgressPageLayout
+      label='Rendering'
+      title='방별 제안을 생성하고 있습니다'
+      subtitle={toneName && (
+        <p className='mt-3 text-sm text-stone-400'>
+          <span className='text-stone-300'>"{toneName}"</span> 톤으로 렌더링 중
+        </p>
+      )}
+      totalEstimatedSeconds={totalEstimatedSeconds}
+      error={error}
+      errorActionHref={`/tones/${sessionId}`}
+      errorActionLabel='톤 선택으로 돌아가기'
+      steps={steps}
+      estimatedSeconds={STEP_ESTIMATES_SECONDS}
+      elapsedSeconds={elapsed}
+    />
   )
 }

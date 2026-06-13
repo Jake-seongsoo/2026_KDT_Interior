@@ -3,12 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthRequiredError, postAnalyze, postAnalyzeCustom } from '@/lib/api'
-import { formatEstimatedTime } from '@/lib/format'
 import { analyzeStorage, modeStorage, customInputStorage, referenceStorage, uploadStorage } from '@/lib/session-storage'
 import { useStepFlow } from '@/hooks/useStepFlow'
-import { LoadingDots } from '@/components/common/LoadingDots'
-import { ProgressErrorBox } from '@/components/common/ProgressErrorBox'
-import { StepProgress } from '@/components/common/StepProgress'
+import { ProgressPageLayout } from '@/components/common/ProgressPageLayout'
 
 const AUTO_STEPS = [
   '도면 업로드 중',
@@ -96,34 +93,16 @@ export default function AnalyzePage() {
   }, [router])
 
   return (
-    <div className='flex min-h-[calc(100vh-4rem)] items-center justify-center bg-stone-950 px-4 py-10'>
-      <div className='w-full max-w-md'>
-        {/* 헤더 */}
-        <div className='mb-10 text-center'>
-          <LoadingDots />
-          <p className='mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-600'>
-            Analyzing
-          </p>
-          <h1
-            className='text-3xl font-bold text-stone-100'
-            style={{ fontFamily: 'var(--font-serif)' }}
-          >
-            도면을 분석하고 있습니다
-          </h1>
-          <p className='mt-3 text-sm text-stone-500'>{formatEstimatedTime(totalEstimatedSeconds)} 정도 소요됩니다.</p>
-        </div>
-
-        {error ? (
-          <ProgressErrorBox message={error} actionHref='/' actionLabel='다시 시도' />
-        ) : (
-          <StepProgress
-            steps={steps}
-            estimatedSeconds={STEP_ESTIMATES_SECONDS}
-            elapsedSeconds={elapsed}
-            dark
-          />
-        )}
-      </div>
-    </div>
+    <ProgressPageLayout
+      label='Analyzing'
+      title='도면을 분석하고 있습니다'
+      totalEstimatedSeconds={totalEstimatedSeconds}
+      error={error}
+      errorActionHref='/'
+      errorActionLabel='다시 시도'
+      steps={steps}
+      estimatedSeconds={STEP_ESTIMATES_SECONDS}
+      elapsedSeconds={elapsed}
+    />
   )
 }

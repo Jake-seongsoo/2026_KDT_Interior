@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Check } from 'lucide-react'
 
-interface Step {
+export interface Step {
   label: string
   done: boolean
   active: boolean
