@@ -9,7 +9,7 @@ setup_logging()
 settings = get_settings()
 
 app = FastAPI(
-  title='AI 인테리어 추천 API',
+  title='Moodie — 인테리어 추천 API',
   description='도면 업로드 → Claude Vision 분석 → 톤 선택 → Imagen 방별 렌더링',
   version='0.1.0',
 )

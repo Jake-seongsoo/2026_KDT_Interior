@@ -38,3 +38,4 @@ Thumbs.db
 *.gif
 *.webp
 !frontend/public/**
+!frontend/app/icon.png

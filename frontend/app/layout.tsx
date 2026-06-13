@@ -3,7 +3,7 @@ import './globals.css'
 import { Header } from '@/components/common/Header'
 
 export const metadata: Metadata = {
-  title: 'AI Interior — 도면 기반 인테리어 추천',
+  title: 'Moodie — 내 공간의 무드를 찾다',
   description: '도면 업로드만으로 AI가 제안하는 인테리어 톤과 방별 연출안',
 }
 

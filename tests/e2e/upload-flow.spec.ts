@@ -7,7 +7,8 @@ const SAMPLE_PATH = path.resolve(__dirname, '../../82type_sample.jpg')
 test.describe('업로드 플로우 E2E', () => {
   test('홈 페이지 로드', async ({ page }) => {
     await page.goto('/')
-    await expect(page.locator('h1')).toContainText('AI 인테리어')
+    // 헤더(banner) 브랜드명으로 검증 — role 기반 셀렉터 우선
+    await expect(page.getByRole('banner')).toContainText('Moodie')
   })
 
   test('파일 선택 시 미리보기 표시', async ({ page }) => {

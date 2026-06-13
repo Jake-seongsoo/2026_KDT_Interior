@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -21,12 +22,14 @@ export default function LoginPage() {
     <div className='flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-10 bg-ivory'>
       <div className='w-full max-w-sm'>
         <div className='mb-8 text-center'>
-          <div
-            className='mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-900 text-amber-100 text-xl font-bold'
-            style={{ fontFamily: 'var(--font-serif)' }}
-          >
-            AI
-          </div>
+          <Image
+            src='/moodie-logo.png'
+            alt='Moodie 로고'
+            width={676}
+            height={607}
+            priority
+            className='mx-auto mb-5 h-auto w-36'
+          />
           <h1
             className='text-2xl font-bold text-stone-900'
             style={{ fontFamily: 'var(--font-serif)' }}

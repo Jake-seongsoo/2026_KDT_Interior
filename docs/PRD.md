@@ -1,4 +1,4 @@
-# AI 인테리어 추천 서비스 MVP PRD
+# Moodie · AI 인테리어 추천 서비스 MVP PRD
 
 ## 핵심 정보
 

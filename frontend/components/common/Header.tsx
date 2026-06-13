@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { Clock, Home } from 'lucide-react'
 import { useAuthUser } from '@/hooks/useAuthUser'
@@ -14,18 +15,20 @@ export function Header() {
   return (
     <header className='sticky top-0 z-40 border-b border-stone-200/80 bg-ivory/90 backdrop-blur'>
       <div className='mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6'>
-        <Link href='/' className='flex items-center gap-3 text-stone-900'>
-          <span
-            className='flex h-8 w-8 items-center justify-center rounded-lg bg-stone-900 text-amber-100 text-sm font-bold'
-            style={{ fontFamily: 'var(--font-serif)' }}
-          >
-            AI
-          </span>
+        <Link href='/' className='flex items-center gap-2 text-stone-900'>
+          <Image
+            src='/moodie-mark.png'
+            alt='Moodie 로고'
+            width={521}
+            height={403}
+            priority
+            className='h-8 w-auto'
+          />
           <span
             className='text-lg font-semibold tracking-tight text-stone-900'
             style={{ fontFamily: 'var(--font-serif)' }}
           >
-            Interior
+            Moodie
           </span>
         </Link>
         <nav className='flex items-center gap-2 sm:gap-4'>

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 개요
 
-AI 인테리어 추천 서비스 — 도면 이미지 업로드 → Claude Vision 분석 → 2026 트렌드 기반 톤 6개 선택 → Imagen 방별 렌더링 + 이케아 상품 추천. KDT 포트폴리오 겸 개인 실사용 목적.
+Moodie — AI 인테리어 추천 서비스. 도면 이미지 업로드 → Claude Vision 분석 → 2026 트렌드 기반 톤 6개 선택 → Imagen 방별 렌더링 + 이케아 상품 추천. KDT 포트폴리오 겸 개인 실사용 목적.
 
 ## 코드 일관성 규칙
 
