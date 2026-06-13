@@ -135,6 +135,10 @@ export const renderStorage = {
     sessionStorage.setItem(KEYS.renderResult(resultId), JSON.stringify(result))
     sessionStorage.setItem(KEYS.renderSession(resultId), sessionId)
   },
+  // API 재조회 후 결과만 캐시 (세션 ID를 모르는 직접 방문 경로)
+  saveResult(resultId: string, result: RenderResponse) {
+    sessionStorage.setItem(KEYS.renderResult(resultId), JSON.stringify(result))
+  },
   loadResult(resultId: string): RenderResponse | null {
     const raw = sessionStorage.getItem(KEYS.renderResult(resultId))
     return raw ? (JSON.parse(raw) as RenderResponse) : null

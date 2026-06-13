@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthRequiredError, postAnalyze, postAnalyzeCustom } from '@/lib/api'
 import { formatEstimatedTime } from '@/lib/format'
-import { modeStorage, customInputStorage, referenceStorage, uploadStorage } from '@/lib/session-storage'
+import { analyzeStorage, modeStorage, customInputStorage, referenceStorage, uploadStorage } from '@/lib/session-storage'
 import { useStepFlow } from '@/hooks/useStepFlow'
 import { LoadingDots } from '@/components/common/LoadingDots'
 import { ProgressErrorBox } from '@/components/common/ProgressErrorBox'
@@ -73,7 +73,7 @@ export default function AnalyzePage() {
           result = await postAnalyze(file, floorArea, referenceFile)
         }
 
-        sessionStorage.setItem(`analyze:${result.session_id}`, JSON.stringify(result))
+        analyzeStorage.save(result.session_id, result)
 
         uploadStorage.clear()
         modeStorage.clear()

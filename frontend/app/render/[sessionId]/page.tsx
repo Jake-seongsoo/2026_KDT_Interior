@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { AuthRequiredError, postRender } from '@/lib/api'
 import { formatEstimatedTime } from '@/lib/format'
-import { refinementStorage } from '@/lib/session-storage'
+import { refinementStorage, renderStorage, toneStorage } from '@/lib/session-storage'
 import { useStepFlow } from '@/hooks/useStepFlow'
 import { LoadingDots } from '@/components/common/LoadingDots'
 import { ProgressErrorBox } from '@/components/common/ProgressErrorBox'
@@ -33,12 +33,11 @@ export default function RenderPage() {
     called.current = true
 
     const run = async () => {
-      const toneRaw = sessionStorage.getItem(`tone:${sessionId}`)
-      if (!toneRaw) {
+      const tone = toneStorage.load(sessionId)
+      if (!tone) {
         router.replace('/')
         return
       }
-      const tone: ToneCandidateOut = JSON.parse(toneRaw)
       setToneName(tone.name)
 
       let imagenStepTimer: number | undefined
@@ -59,9 +58,8 @@ export default function RenderPage() {
         })
         refinementStorage.clear(sessionId)
 
-        sessionStorage.setItem(`render:${result.result_id}`, JSON.stringify(result))
-        sessionStorage.setItem(`render_session:${result.result_id}`, sessionId)
-        sessionStorage.removeItem(`tone:${sessionId}`)
+        renderStorage.save(result.result_id, sessionId, result)
+        toneStorage.clear(sessionId)
 
         await complete(() => router.push(`/result/${result.result_id}`))
       } catch (e) {

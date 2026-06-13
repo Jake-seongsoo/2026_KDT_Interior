@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { AuthRequiredError, getAnalyzeResult } from '@/lib/api'
+import { analyzeStorage, toneStorage } from '@/lib/session-storage'
 import { ErrorScreen } from '@/components/common/ErrorScreen'
 import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { RoomInfoCard } from '@/components/tones/RoomInfoCard'
@@ -23,16 +24,16 @@ export default function TonesPage() {
     let ignore = false
 
     const load = async () => {
-      const raw = sessionStorage.getItem(`analyze:${sessionId}`)
-      if (raw) {
-        setData(JSON.parse(raw))
+      const cached = analyzeStorage.load(sessionId)
+      if (cached) {
+        setData(cached)
         return
       }
 
       try {
         const result = await getAnalyzeResult(sessionId)
         if (ignore) return
-        sessionStorage.setItem(`analyze:${result.session_id}`, JSON.stringify(result))
+        analyzeStorage.save(result.session_id, result)
         setData(result)
       } catch (e) {
         if (ignore) return
@@ -52,7 +53,7 @@ export default function TonesPage() {
 
   const handleProceed = () => {
     if (!selectedTone || !data) return
-    sessionStorage.setItem(`tone:${sessionId}`, JSON.stringify(selectedTone))
+    toneStorage.save(sessionId, selectedTone)
     router.push(`/render/${sessionId}`)
   }
 

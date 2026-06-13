@@ -11,7 +11,7 @@ import { LayoutCanvas } from '@/components/result/LayoutCanvas'
 import { RoomTabs } from '@/components/result/RoomTabs'
 import { RefinementModal } from '@/components/result/RefinementModal'
 import { Button } from '@/components/ui/button'
-import { toneStorage, refinementStorage } from '@/lib/session-storage'
+import { analyzeStorage, renderStorage, toneStorage, refinementStorage } from '@/lib/session-storage'
 import type { AnalyzeResponse, RefinementParams, RenderResponse } from '@/types/api'
 
 const FAMILY_LABELS: Record<string, string> = {
@@ -37,34 +37,27 @@ export default function ResultPage() {
     let ignore = false
 
     const load = async () => {
-      const sid = sessionStorage.getItem(`render_session:${id}`)
+      const sid = renderStorage.loadSessionId(id)
       if (sid) {
         setSessionId(sid)
-        try {
-          const analyzeRaw = sessionStorage.getItem(`analyze:${sid}`)
-          if (analyzeRaw) {
-            const parsed: AnalyzeResponse = JSON.parse(analyzeRaw)
-            setAnalyzeRooms(parsed.rooms)
-          }
-        } catch {
-          // 분석 데이터 없어도 무방 — 균등 분할 fallback
-        }
+        // 분석 데이터 없어도 무방 — 균등 분할 fallback
+        const analyze = analyzeStorage.load(sid)
+        if (analyze) setAnalyzeRooms(analyze.rooms)
         const refinement = refinementStorage.load(sid)
         if (refinement) setAppliedRefinement(refinement)
       }
 
-      const raw = sessionStorage.getItem(`render:${id}`)
-      if (raw) {
-        const parsed: RenderResponse = JSON.parse(raw)
-        setData(parsed)
-        setSelectedRoomId(parsed.room_results[0]?.room_id ?? null)
+      const cached = renderStorage.loadResult(id)
+      if (cached) {
+        setData(cached)
+        setSelectedRoomId(cached.room_results[0]?.room_id ?? null)
         return
       }
 
       try {
         const result = await getRenderResult(id)
         if (ignore) return
-        sessionStorage.setItem(`render:${result.result_id}`, JSON.stringify(result))
+        renderStorage.saveResult(result.result_id, result)
         setData(result)
         setSelectedRoomId(result.room_results[0]?.room_id ?? null)
       } catch (e) {
