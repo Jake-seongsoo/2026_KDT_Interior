@@ -2,11 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home } from 'lucide-react'
+import { Clock, Home } from 'lucide-react'
+import { useAuthUser } from '@/hooks/useAuthUser'
 import { LoginButton } from './LoginButton'
 
 export function Header() {
   const pathname = usePathname()
+  const user = useAuthUser()
   const isLoginPage = pathname === '/auth/login'
 
   return (
@@ -35,6 +37,16 @@ export function Header() {
             <Home size={18} strokeWidth={1.8} />
             <span className='hidden sm:inline'>홈</span>
           </Link>
+          {user && (
+            <Link
+              href='/history'
+              className='inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900'
+              aria-label='분석 기록 보기'
+            >
+              <Clock size={18} strokeWidth={1.8} />
+              <span className='hidden sm:inline'>기록</span>
+            </Link>
+          )}
           {!isLoginPage && <LoginButton />}
         </nav>
       </div>

@@ -1,32 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { LogIn, LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useAuthUser } from '@/hooks/useAuthUser'
 import { Button } from '@/components/ui/button'
-import type { User } from '@supabase/supabase-js'
 
 export function LoginButton() {
-  const [user, setUser] = useState<User | null>(null)
-
-  useEffect(() => {
-    const supabase = createClient()
-
-    supabase.auth.getSession()
-      .then(({ data }) => setUser(data.session?.user ?? null))
-      .catch(() => setUser(null))
-
-    supabase.auth.getUser()
-      .then(({ data }) => {
-        if (data.user) setUser(data.user)
-      })
-      .catch(() => setUser(null))
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
+  const user = useAuthUser()
 
   const handleLogin = async () => {
     const supabase = createClient()
@@ -40,9 +20,9 @@ export function LoginButton() {
   }
 
   const handleLogout = async () => {
+    // signOut 후 상태는 useAuthUser의 onAuthStateChange 구독이 갱신한다
     const supabase = createClient()
     await supabase.auth.signOut()
-    setUser(null)
   }
 
   if (user) {
