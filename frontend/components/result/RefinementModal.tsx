@@ -1,6 +1,6 @@
 'use client'
 
-import { KeyboardEvent, useState } from 'react'
+import { useState } from 'react'
 import { Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,6 +12,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { MoodChipSelector } from '@/components/common/MoodChipSelector'
 import type { Appliance, RefinementParams } from '@/types/api'
 
 const FAMILY_OPTIONS = [
@@ -20,12 +21,6 @@ const FAMILY_OPTIONS = [
   { value: 'family_with_kid', label: '아이와 함께' },
   { value: 'family_with_pet', label: '반려동물과 함께' },
 ] as const
-
-const MOOD_CHIPS = [
-  '모던', '미니멀', '내추럴', '코지', '럭셔리',
-  '빈티지', '북유럽', '일본풍', '인더스트리얼', '보헤미안',
-  '클래식', '다크무드',
-]
 
 // 신혼 필수 가전 10종 + 기본 배치 방 (도면에 해당 방이 없으면 드롭다운에서 변경 가능)
 const APPLIANCE_LIST: Array<{ name: string; defaultRoom: string }> = [
@@ -52,7 +47,6 @@ export function RefinementModal({ open, onOpenChange, onConfirm, rooms = [] }: R
   const [budget, setBudget] = useState<number | null>(null)
   const [familyType, setFamilyType] = useState<string | null>(null)
   const [moodChips, setMoodChips] = useState<string[]>([])
-  const [chipInput, setChipInput] = useState('')
   const [userText, setUserText] = useState('')
   const [keepAppliances, setKeepAppliances] = useState(false)
   // key: 가전명, value: 배치 방 유형 — key가 존재하면 선택된 상태
@@ -73,31 +67,6 @@ export function RefinementModal({ open, onOpenChange, onConfirm, rooms = [] }: R
 
   const setApplianceRoom = (name: string, room: string) => {
     setApplianceSelections(prev => ({ ...prev, [name]: room }))
-  }
-
-  const isPreset = (chip: string) => MOOD_CHIPS.includes(chip)
-
-  const toggleChip = (chip: string) => {
-    setMoodChips(prev =>
-      prev.includes(chip) ? prev.filter(c => c !== chip) : [...prev, chip],
-    )
-  }
-
-  const addCustomChip = () => {
-    const trimmed = chipInput.trim()
-    if (!trimmed || moodChips.includes(trimmed)) {
-      setChipInput('')
-      return
-    }
-    setMoodChips(prev => [...prev, trimmed])
-    setChipInput('')
-  }
-
-  const handleChipKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      addCustomChip()
-    }
   }
 
   const handleConfirm = () => {
@@ -204,59 +173,8 @@ export function RefinementModal({ open, onOpenChange, onConfirm, rooms = [] }: R
               <p className='text-right text-xs text-stone-500'>{userText.length}/300</p>
             </div>
 
-            {/* 무드 칩 */}
-            <div className='flex flex-wrap gap-2'>
-              {MOOD_CHIPS.map(chip => {
-                const selected = moodChips.includes(chip)
-                return (
-                  <button
-                    key={chip}
-                    type='button'
-                    onClick={() => toggleChip(chip)}
-                    className={[
-                      'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                      selected
-                        ? 'border-amber-500 bg-amber-900/40 text-amber-300'
-                        : 'border-stone-700 bg-stone-800 text-stone-300 hover:border-stone-500',
-                    ].join(' ')}
-                  >
-                    {chip}
-                  </button>
-                )
-              })}
-              {/* 커스텀 칩 */}
-              {moodChips.filter(c => !isPreset(c)).map(chip => (
-                <button
-                  key={chip}
-                  type='button'
-                  onClick={() => toggleChip(chip)}
-                  className='inline-flex items-center gap-1 rounded-full border border-amber-700/50 bg-amber-900/30 px-3 py-1 text-xs font-medium text-amber-400 hover:bg-amber-900/50'
-                >
-                  {chip}
-                  <span className='text-amber-600'>✕</span>
-                </button>
-              ))}
-            </div>
-
-            {/* 커스텀 칩 추가 */}
-            <div className='flex gap-2'>
-              <input
-                value={chipInput}
-                onChange={e => setChipInput(e.target.value)}
-                onKeyDown={handleChipKeyDown}
-                placeholder='직접 입력 후 엔터'
-                maxLength={20}
-                className='flex-1 max-w-48 rounded-lg border border-stone-700 bg-stone-800 px-3 py-1.5 text-xs text-stone-200 placeholder-stone-500 focus:border-amber-600 focus:outline-none'
-              />
-              <button
-                type='button'
-                onClick={addCustomChip}
-                disabled={!chipInput.trim()}
-                className='rounded-lg border border-stone-700 bg-stone-800 px-3 py-1.5 text-xs text-stone-300 hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-40'
-              >
-                + 추가
-              </button>
-            </div>
+            {/* 무드 칩 — 프리셋 토글 + 커스텀 추가 */}
+            <MoodChipSelector value={moodChips} onChange={setMoodChips} theme='dark' />
           </div>
 
           {/* 기존 가전 유지 */}
