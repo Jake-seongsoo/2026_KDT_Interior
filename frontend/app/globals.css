@@ -96,3 +96,14 @@ body {
   background: #fde68a;
   color: #1c1917;
 }
+
+/* PDF 저장(window.print) — 헤더·버튼 등 인쇄 불필요 요소 숨김 */
+@media print {
+  header,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}

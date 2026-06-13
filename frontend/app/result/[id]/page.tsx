@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Home, Palette, Settings2 } from 'lucide-react'
+import { FileDown, Home, Palette, Settings2, Share2 } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
-import { AuthRequiredError, getRenderResult } from '@/lib/api'
+import { AuthRequiredError, createShareLink, getRenderResult } from '@/lib/api'
 import { ErrorScreen } from '@/components/common/ErrorScreen'
 import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { LayoutCanvas } from '@/components/result/LayoutCanvas'
@@ -31,6 +31,7 @@ export default function ResultPage() {
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null)
   const [refinementOpen, setRefinementOpen] = useState(false)
   const [appliedRefinement, setAppliedRefinement] = useState<RefinementParams | null>(null)
+  const [shareState, setShareState] = useState<'idle' | 'loading' | 'copied' | 'error'>('idle')
   const roomTabsRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
@@ -89,6 +90,25 @@ export default function ResultPage() {
     router.push(`/render/${sessionId}`)
   }
 
+  async function handleShare() {
+    if (!data) return
+    setShareState('loading')
+    try {
+      const { share_id } = await createShareLink(data.result_id)
+      const url = `${location.origin}/share/${share_id}`
+      await navigator.clipboard.writeText(url)
+      setShareState('copied')
+      setTimeout(() => setShareState('idle'), 2500)
+    } catch {
+      setShareState('error')
+      setTimeout(() => setShareState('idle'), 2500)
+    }
+  }
+
+  function handlePdf() {
+    window.print()
+  }
+
   if (error) return <ErrorScreen message={error} />
   if (!data) return <LoadingScreen />
 
@@ -118,7 +138,7 @@ export default function ResultPage() {
               <span className='inline-flex h-6 items-center rounded-full border border-amber-700/40 bg-amber-700/20 px-2.5 text-xs font-medium text-amber-400'>
                 {tone.category}
               </span>
-              <div className='flex gap-2 mt-2'>
+              <div className='no-print mt-2 flex flex-wrap gap-2'>
                 <Button
                   asChild
                   variant='outline'
@@ -153,6 +173,31 @@ export default function ResultPage() {
                     </Button>
                   </>
                 )}
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='border-stone-700 bg-stone-800 text-stone-300 hover:bg-stone-700 hover:text-stone-100'
+                  onClick={handleShare}
+                  disabled={shareState === 'loading'}
+                >
+                  <Share2 className='h-4 w-4' />
+                  {shareState === 'copied'
+                    ? '링크 복사됨!'
+                    : shareState === 'error'
+                      ? '복사 실패'
+                      : shareState === 'loading'
+                        ? '생성 중...'
+                        : '공유'}
+                </Button>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='border-stone-700 bg-stone-800 text-stone-300 hover:bg-stone-700 hover:text-stone-100'
+                  onClick={handlePdf}
+                >
+                  <FileDown className='h-4 w-4' />
+                  PDF 저장
+                </Button>
               </div>
             </div>
           </div>
