@@ -310,3 +310,31 @@ class SupabaseService:
       .execute()
     )
     return resp.data
+
+  # ── share_links (F008 공유 링크) ───────────────────────────
+
+  async def create_share_link(self, result_id: str) -> dict:
+    """결과의 공유 링크를 생성한다. 이미 있으면 기존 링크를 반환한다.
+
+    share_links.result_id가 unique이므로 같은 결과는 항상 같은 공유 id를 가진다.
+    """
+    existing = (
+      self._db.table('share_links').select('*').eq('result_id', result_id).execute()
+    )
+    if existing.data:
+      return existing.data[0]
+    data = {'id': str(uuid.uuid4()), 'result_id': result_id}
+    resp = self._db.table('share_links').insert(data).execute()
+    return resp.data[0]
+
+  async def get_share_link(self, share_id: str) -> dict:
+    resp = self._db.table('share_links').select('*').eq('id', share_id).execute()
+    if not resp.data:
+      raise ValueError(f'공유 링크를 찾을 수 없습니다: {share_id}')
+    return resp.data[0]
+
+  async def increment_share_view(self, share_id: str, current_count: int) -> None:
+    """공유 조회 수를 1 증가시킨다 (read-modify-write, 개인용 규모라 동시성 무시)."""
+    self._db.table('share_links').update(
+      {'view_count': current_count + 1}
+    ).eq('id', share_id).execute()

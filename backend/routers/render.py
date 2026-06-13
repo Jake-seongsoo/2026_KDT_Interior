@@ -445,23 +445,18 @@ async def render(
   )
 
 
-@router.get('/results/{result_id}', response_model=RenderResponse)
-async def get_render_result(
-  result_id: str,
-  user: AuthUser = Depends(verify_jwt),
+async def _assemble_render_response(
+  db: SupabaseService,
+  storage: StorageService,
+  result: dict,
+  include_products: bool = True,
 ) -> RenderResponse:
-  """저장된 렌더링 결과를 다시 조회한다."""
-  db = SupabaseService()
-  storage = StorageService()
+  """저장된 result dict로부터 RenderResponse를 조립한다.
 
-  try:
-    result = await db.get_result(result_id)
-    session = await db.get_session(result['session_id'])
-  except ValueError as e:
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-
-  ensure_owner(user, result, session, detail='이 결과에 접근할 권한이 없습니다.')
-
+  본인 결과 조회(get_render_result)와 공유 조회가 공유한다.
+  include_products=False면 상품을 제외한다 (공유 페이지 — 렌더+톤만).
+  """
+  result_id = result['id']
   try:
     tone = await db.get_tone(result['selected_tone_id'])
   except ValueError as e:
@@ -471,10 +466,12 @@ async def get_render_result(
   svg_layout = build_layout_svg(rooms)
   room_renders = await db.get_room_renders(result_id)
 
-  products_by_render_id = {
-    render_row['id']: await db.get_products_by_room_render(render_row['id'])
-    for render_row in room_renders
-  }
+  products_by_render_id: dict[str, list[dict]] = {}
+  if include_products:
+    products_by_render_id = {
+      render_row['id']: await db.get_products_by_room_render(render_row['id'])
+      for render_row in room_renders
+    }
 
   room_results_out = [
     RoomResultOut(
@@ -501,3 +498,23 @@ async def get_render_result(
     room_results=room_results_out,
     processing_ms=result.get('processing_ms', 0),
   )
+
+
+@router.get('/results/{result_id}', response_model=RenderResponse)
+async def get_render_result(
+  result_id: str,
+  user: AuthUser = Depends(verify_jwt),
+) -> RenderResponse:
+  """저장된 렌더링 결과를 다시 조회한다."""
+  db = SupabaseService()
+  storage = StorageService()
+
+  try:
+    result = await db.get_result(result_id)
+    session = await db.get_session(result['session_id'])
+  except ValueError as e:
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+
+  ensure_owner(user, result, session, detail='이 결과에 접근할 권한이 없습니다.')
+
+  return await _assemble_render_response(db, storage, result)
