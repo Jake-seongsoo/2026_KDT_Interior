@@ -75,7 +75,7 @@ export function StepProgress({ steps, estimatedSeconds, elapsedSeconds, dark }: 
       ? Math.min((visualElapsed / totalEstimate) * 100, 95)
       : null
 
-  const mutedText = dark ? 'text-stone-400' : 'text-stone-400'
+  const mutedText = 'text-stone-400'  // 비활성 스텝·시간 텍스트는 라이트/다크 공통
   const activeText = dark ? 'text-stone-100' : 'text-stone-900'
   const doneText = dark ? 'text-stone-500' : 'text-stone-400'
   const borderColor = dark ? 'border-stone-700' : 'border-stone-200'

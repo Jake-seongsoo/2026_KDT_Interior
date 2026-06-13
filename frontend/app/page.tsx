@@ -88,7 +88,7 @@ export default function HomePage() {
   const steps = mode === 'auto' ? autoSteps : customSteps
 
   return (
-    <div className='min-h-[calc(100vh-4rem)] bg-[#F5EFE5]'>
+    <div className='min-h-[calc(100vh-4rem)] bg-ivory'>
       <div className='mx-auto grid max-w-6xl gap-12 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_420px] lg:py-20 lg:gap-16 lg:items-start'>
 
         {/* 좌측: 헤드라인 + 설명 */}

@@ -61,7 +61,7 @@ export default function TonesPage() {
   if (!data) return <LoadingScreen />
 
   return (
-    <div className='min-h-[calc(100vh-4rem)] bg-[#F5EFE5]'>
+    <div className='min-h-[calc(100vh-4rem)] bg-ivory'>
       <div className='mx-auto max-w-6xl px-4 py-10 sm:px-6'>
 
         {/* 페이지 헤더 */}

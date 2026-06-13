@@ -95,7 +95,7 @@ export default function ResultPage() {
   const tone = data.selected_tone
 
   return (
-    <div className='min-h-[calc(100vh-4rem)] bg-[#F5EFE5]'>
+    <div className='min-h-[calc(100vh-4rem)] bg-ivory'>
       {/* 톤 히어로 — 다크 섹션 */}
       <section className='bg-stone-950'>
         <div className='mx-auto max-w-6xl px-4 py-10 sm:px-6'>
