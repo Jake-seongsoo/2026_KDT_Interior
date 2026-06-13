@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import get_settings
 from core.logging import setup_logging
-from routers import analyze, health, render
+from routers import analyze, health, history, render
 
 setup_logging()
 settings = get_settings()
@@ -25,3 +25,4 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(analyze.router)
 app.include_router(render.router)
+app.include_router(history.router)

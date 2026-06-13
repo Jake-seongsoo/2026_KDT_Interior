@@ -116,6 +116,29 @@ class RenderResponse(BaseModel):
   )
 
 
+# ── /history 응답 모델 (F011 분석 기록 조회) ───────────────
+
+class HistoryResultItem(BaseModel):
+  """기록 세션에 중첩되는 렌더링 결과 1건."""
+  result_id: UUID
+  tone_name: str
+  created_at: str  # ISO8601 문자열 (Supabase timestamptz)
+
+
+class HistorySessionItem(BaseModel):
+  session_id: UUID
+  created_at: str
+  floor_area_pyeong: float
+  status: str                      # 'analyzing' | 'completed' | 'failed'
+  room_summary: str                # 예: '거실·주방·안방'
+  thumbnail_url: str | None = None  # 도면 Signed URL (15분 TTL, 본인 세션만 — RISK-02 준수)
+  results: list[HistoryResultItem] = []  # 최근순 렌더 결과
+
+
+class HistoryResponse(BaseModel):
+  sessions: list[HistorySessionItem]
+
+
 # ── /health 응답 ───────────────────────────────────────────
 
 class HealthResponse(BaseModel):
