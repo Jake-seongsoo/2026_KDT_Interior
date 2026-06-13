@@ -98,12 +98,40 @@ body {
 }
 
 /* PDF 저장(window.print) — 헤더·버튼 등 인쇄 불필요 요소 숨김 */
+/* 페이지 여백 0 → 브라우저 자동 머리글/바닥글(URL·날짜·페이지수) 미출력 */
+@page {
+  margin: 0;
+}
 @media print {
   header,
   .no-print {
     display: none !important;
   }
+  /* 페이지 전체 배경은 html이 담당 — 인쇄 반영을 위해 color-adjust 필수 */
+  html {
+    background: var(--color-ivory);
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
   body {
-    background: white;
+    /* 본문 콘텐츠(bg-ivory)와 여백 색을 통일 */
+    background: var(--color-ivory);
+    /* 렌더 이미지·배경색이 인쇄에 그대로 반영되도록 */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  /* 각 방 = 한 페이지. 페이지 경계에서 절대 잘리지 않도록 */
+  .print-room {
+    box-sizing: border-box;
+    padding: 14mm;
+    break-inside: avoid;
+  }
+  /* 방 사이마다 페이지 분리 (마지막 방 뒤 빈 페이지 방지) */
+  .print-room:not(:last-child) {
+    break-after: page;
+  }
+  /* 렌더 이미지는 단독으로도 페이지에 걸치지 않도록 */
+  .print-room img {
+    break-inside: avoid;
   }
 }

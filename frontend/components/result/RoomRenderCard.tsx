@@ -6,11 +6,13 @@ import { ProductGrid } from './ProductGrid'
 interface RoomRenderCardProps {
   room: RoomResultOut
   showProducts?: boolean  // 공유 페이지는 상품 제외 (false)
+  /** 즉시 이미지 로드. 인쇄 전용 영역(display:none)은 lazy 로드가 안 되므로 true 전달. */
+  eager?: boolean
 }
 
-export function RoomRenderCard({ room, showProducts = true }: RoomRenderCardProps) {
+export function RoomRenderCard({ room, showProducts = true, eager = false }: RoomRenderCardProps) {
   return (
-    <div className='space-y-6'>
+    <div className='space-y-6 print:space-y-12'>
       {/* 렌더 이미지 */}
       <div className='relative aspect-[16/9] overflow-hidden rounded-2xl border border-stone-200 bg-stone-100'>
         {room.render_url ? (
@@ -19,6 +21,7 @@ export function RoomRenderCard({ room, showProducts = true }: RoomRenderCardProp
               src={room.render_url}
               alt={`${room.room_type} 인테리어 제안`}
               fill
+              loading={eager ? 'eager' : 'lazy'}
               className='object-cover transition-transform duration-700 hover:scale-[1.02]'
               sizes='(max-width: 768px) 100vw, 900px'
             />

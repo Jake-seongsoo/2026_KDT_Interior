@@ -116,8 +116,8 @@ export default function ResultPage() {
 
   return (
     <div className='min-h-[calc(100vh-4rem)] bg-ivory'>
-      {/* 톤 히어로 — 다크 섹션 */}
-      <section className='bg-stone-950'>
+      {/* 톤 히어로 — 다크 섹션 (PDF에서는 숨기고 첫 방 위 요약으로 대체) */}
+      <section className='bg-stone-950 print:hidden'>
         <div className='mx-auto max-w-6xl px-4 py-10 sm:px-6'>
           <div className='flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between'>
             <div className='flex-1'>
@@ -267,20 +267,22 @@ export default function ResultPage() {
 
       {/* 메인 콘텐츠 */}
       <div className='mx-auto max-w-6xl space-y-8 px-4 py-10 sm:px-6'>
-        {/* 배치도 */}
-        <LayoutCanvas
-          rooms={data.room_results.map(r => ({
-            room_id: r.room_id,
-            room_type: r.room_type,
-            area_sqm: analyzeRooms?.find(ar => ar.id === r.room_id)?.area_sqm ?? null,
-          }))}
-          activeRoomId={selectedRoomId}
-          onRoomClick={handleRoomClick}
-        />
+        {/* 배치도 (인쇄·PDF 제외) */}
+        <div className='no-print'>
+          <LayoutCanvas
+            rooms={data.room_results.map(r => ({
+              room_id: r.room_id,
+              room_type: r.room_type,
+              area_sqm: analyzeRooms?.find(ar => ar.id === r.room_id)?.area_sqm ?? null,
+            }))}
+            activeRoomId={selectedRoomId}
+            onRoomClick={handleRoomClick}
+          />
+        </div>
 
         {/* 방별 제안 */}
         <section ref={roomTabsRef} className='scroll-mt-4'>
-          <div className='mb-5'>
+          <div className='mb-5 no-print'>
             <h2
               className='text-xl font-bold text-stone-900'
               style={{ fontFamily: 'var(--font-serif)' }}
@@ -293,6 +295,7 @@ export default function ResultPage() {
           </div>
           <RoomTabs
             rooms={data.room_results}
+            tone={tone}
             activeRoomId={selectedRoomId}
             onChange={setSelectedRoomId}
             appliancesMap={(() => {
