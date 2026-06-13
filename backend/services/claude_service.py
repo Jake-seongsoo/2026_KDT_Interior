@@ -276,6 +276,51 @@ class ClaudeService:
       '- keywords에는 위 style_tokens 중 최소 1개를 반드시 포함\n'
     )
 
+  @staticmethod
+  def _load_trend_context(year: int) -> tuple[list | None, list, str]:
+    """트렌드 캐시를 조회해 (cached_trend, tools, trend_context)를 반환한다.
+
+    캐시 히트 시 Web Search 도구를 비활성화하고 캐시된 트렌드를 컨텍스트로 사용한다.
+    자동 추천·커스텀 변형 두 모드가 동일 캐시 키(tone-trend:{year})를 공유한다.
+    """
+    cache_key = f'tone-trend:{year}'
+    cached_trend = trend_cache.get(cache_key)
+    if cached_trend:
+      logger.info('트렌드 캐시 히트: %s', cache_key)
+      trend_context = (
+        f'2026년 인테리어 트렌드 요약:\n{json.dumps(cached_trend, ensure_ascii=False)}'
+      )
+      return cached_trend, [], trend_context
+    logger.info('트렌드 캐시 미스: Web Search 호출')
+    tools = [{'name': 'web_search', 'type': 'web_search_20250305'}]
+    return None, tools, f'{year}년 한국 인테리어 트렌드를 웹에서 검색해 반영해주세요.'
+
+  @staticmethod
+  def _finalize_tone_response(
+    resp, year: int, cached_trend: list | None, label: str,
+  ) -> tuple[list[dict], dict]:
+    """톤 생성 응답을 파싱하고 트렌드 캐시 저장 + 스냅샷 구성까지 마무리한다."""
+    text = ''
+    for block in resp.content:
+      if hasattr(block, 'text'):
+        text += block.text
+
+    parsed = _parse_json_block(text)
+    tones = parsed.get('tones', [])
+    trend_raw = parsed.get('trend_summary', [])
+
+    # 캐시 미스 시에만 새로 검색된 트렌드를 저장
+    if not cached_trend and trend_raw:
+      trend_cache[f'tone-trend:{year}'] = trend_raw
+
+    snapshot = {
+      'searched_at': _now_iso(),
+      'cache_hit': cached_trend is not None,
+      'trends': trend_raw if not cached_trend else cached_trend,
+    }
+    logger.info('%s %d개 생성 완료 (cache_hit=%s)', label, len(tones), snapshot['cache_hit'])
+    return tones, snapshot
+
   async def generate_tone_candidates(
     self,
     rooms: list[dict],
@@ -287,18 +332,7 @@ class ClaudeService:
 
     reference_signature가 주어지면 6개 톤을 모두 해당 시그니처를 시드로 변주한다.
     """
-    cache_key = f'tone-trend:{year}'
-    cached_trend = trend_cache.get(cache_key)
-
-    # 캐시 히트 시 Web Search 생략
-    if cached_trend:
-      tools = []
-      trend_context = f'2026년 인테리어 트렌드 요약:\n{json.dumps(cached_trend, ensure_ascii=False)}'
-      logger.info('트렌드 캐시 히트: %s', cache_key)
-    else:
-      tools = [{'name': 'web_search', 'type': 'web_search_20250305'}]
-      trend_context = f'{year}년 한국 인테리어 트렌드를 웹에서 검색해 반영해주세요.'
-      logger.info('트렌드 캐시 미스: Web Search 호출')
+    cached_trend, tools, trend_context = self._load_trend_context(year)
 
     room_summary = ', '.join(r.get('room_type', '') for r in rooms)
     reference_block = self._format_reference_block(reference_signature)
@@ -347,28 +381,7 @@ class ClaudeService:
       tools=tools if tools else [],
     )
 
-    # Tool Use 응답에서 텍스트 블록 추출
-    text = ''
-    for block in resp.content:
-      if hasattr(block, 'text'):
-        text += block.text
-
-    parsed = _parse_json_block(text)
-    tones = parsed.get('tones', [])
-    trend_raw = parsed.get('trend_summary', [])
-
-    # 캐시 미스 시 트렌드 데이터 저장
-    if not cached_trend and trend_raw:
-      trend_cache[cache_key] = trend_raw
-
-    snapshot = {
-      'searched_at': _now_iso(),
-      'cache_hit': cached_trend is not None,
-      'trends': trend_raw if not cached_trend else cached_trend,
-    }
-
-    logger.info('톤 후보 %d개 생성 완료 (cache_hit=%s)', len(tones), snapshot['cache_hit'])
-    return tones, snapshot
+    return self._finalize_tone_response(resp, year, cached_trend, '톤 후보')
 
   async def generate_custom_tone_variants(
     self,
@@ -384,17 +397,7 @@ class ClaudeService:
     tone_index: 1=안전(입력 충실), 2=중립(균형), 3=대담(확장·대비)
     트렌드 캐시는 자동 추천 모드와 동일한 키로 공유한다.
     """
-    cache_key = f'tone-trend:{year}'
-    cached_trend = trend_cache.get(cache_key)
-
-    if cached_trend:
-      tools = []
-      trend_context = f'2026년 인테리어 트렌드 요약:\n{json.dumps(cached_trend, ensure_ascii=False)}'
-      logger.info('트렌드 캐시 히트: %s', cache_key)
-    else:
-      tools = [{'name': 'web_search', 'type': 'web_search_20250305'}]
-      trend_context = f'{year}년 한국 인테리어 트렌드를 웹에서 검색해 반영해주세요.'
-      logger.info('트렌드 캐시 미스: Web Search 호출')
+    cached_trend, tools, trend_context = self._load_trend_context(year)
 
     room_summary = ', '.join(r.get('room_type', '') for r in rooms)
     chips_text = ', '.join(mood_chips) if mood_chips else '(없음)'
@@ -458,26 +461,7 @@ class ClaudeService:
       tools=tools if tools else [],
     )
 
-    text = ''
-    for block in resp.content:
-      if hasattr(block, 'text'):
-        text += block.text
-
-    parsed = _parse_json_block(text)
-    tones = parsed.get('tones', [])
-    trend_raw = parsed.get('trend_summary', [])
-
-    if not cached_trend and trend_raw:
-      trend_cache[cache_key] = trend_raw
-
-    snapshot = {
-      'searched_at': _now_iso(),
-      'cache_hit': cached_trend is not None,
-      'trends': trend_raw if not cached_trend else cached_trend,
-    }
-
-    logger.info('커스텀 톤 변형 %d개 생성 완료 (cache_hit=%s)', len(tones), snapshot['cache_hit'])
-    return tones, snapshot
+    return self._finalize_tone_response(resp, year, cached_trend, '커스텀 톤 변형')
 
   def build_imagen_prompt(
     self,
