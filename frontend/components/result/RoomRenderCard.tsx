@@ -5,9 +5,10 @@ import { ProductGrid } from './ProductGrid'
 
 interface RoomRenderCardProps {
   room: RoomResultOut
+  showProducts?: boolean  // 공유 페이지는 상품 제외 (false)
 }
 
-export function RoomRenderCard({ room }: RoomRenderCardProps) {
+export function RoomRenderCard({ room, showProducts = true }: RoomRenderCardProps) {
   return (
     <div className='space-y-6'>
       {/* 렌더 이미지 */}
@@ -43,14 +44,16 @@ export function RoomRenderCard({ room }: RoomRenderCardProps) {
         <p className='text-sm leading-7 text-stone-600'>{room.rationale}</p>
       </div>
 
-      {/* 추천 상품 */}
-      <div className='space-y-3'>
-        <div className='flex items-center justify-between'>
-          <h3 className='text-sm font-semibold text-stone-900'>추천 상품</h3>
-          <span className='text-xs text-stone-400'>{room.products.length}개</span>
+      {/* 추천 상품 (공유 페이지에서는 숨김) */}
+      {showProducts && (
+        <div className='space-y-3'>
+          <div className='flex items-center justify-between'>
+            <h3 className='text-sm font-semibold text-stone-900'>추천 상품</h3>
+            <span className='text-xs text-stone-400'>{room.products.length}개</span>
+          </div>
+          <ProductGrid products={room.products} />
         </div>
-        <ProductGrid products={room.products} />
-      </div>
+      )}
     </div>
   )
 }

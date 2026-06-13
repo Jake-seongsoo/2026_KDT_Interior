@@ -9,9 +9,10 @@ interface RoomTabsProps {
   onChange?: (roomId: string) => void
   /** 방 유형 → 배치 가전명 목록. 정밀화 시 선택된 가전이 있을 때만 전달. */
   appliancesMap?: Record<string, string[]>
+  showProducts?: boolean  // 공유 페이지는 상품 제외 (false)
 }
 
-export function RoomTabs({ rooms, activeRoomId, onChange, appliancesMap }: RoomTabsProps) {
+export function RoomTabs({ rooms, activeRoomId, onChange, appliancesMap, showProducts = true }: RoomTabsProps) {
   const activeIdx = activeRoomId
     ? rooms.findIndex(r => r.room_id === activeRoomId)
     : 0
@@ -55,7 +56,7 @@ export function RoomTabs({ rooms, activeRoomId, onChange, appliancesMap }: RoomT
         </div>
       )}
 
-      {activeRoom && <RoomRenderCard room={activeRoom} />}
+      {activeRoom && <RoomRenderCard room={activeRoom} showProducts={showProducts} />}
     </div>
   )
 }
