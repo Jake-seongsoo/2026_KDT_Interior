@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import * as path from 'path'
 import * as fs from 'fs'
+import { loginAs, supabaseAuthAvailable } from '../fixtures/supabase-auth'
 
 const SAMPLE_PATH = path.resolve(__dirname, '../../82type_sample.jpg')
 
@@ -11,11 +12,12 @@ test.describe('업로드 플로우 E2E', () => {
     await expect(page.getByRole('banner')).toContainText('Moodie')
   })
 
-  test('파일 선택 시 미리보기 표시', async ({ page }) => {
-    if (!fs.existsSync(SAMPLE_PATH)) {
-      test.skip(true, '샘플 도면 파일이 없습니다.')
-    }
+  test('파일 선택 시 미리보기 표시', async ({ page, context }) => {
+    test.skip(!fs.existsSync(SAMPLE_PATH), '샘플 도면 파일이 없습니다.')
+    test.skip(!supabaseAuthAvailable(), 'Supabase E2E 인증 env가 없습니다.')
 
+    // 파일 선택은 로그인 필수(ensureLoggedIn) — 세션 쿠키 주입
+    await loginAs(context)
     await page.goto('/')
     const input = page.locator('input[type="file"]')
     await input.setInputFiles(SAMPLE_PATH)
@@ -30,11 +32,11 @@ test.describe('업로드 플로우 E2E', () => {
     await expect(btn).toBeDisabled()
   })
 
-  test('파일 선택 후 분석 시작 버튼 활성화', async ({ page }) => {
-    if (!fs.existsSync(SAMPLE_PATH)) {
-      test.skip(true, '샘플 도면 파일이 없습니다.')
-    }
+  test('파일 선택 후 분석 시작 버튼 활성화', async ({ page, context }) => {
+    test.skip(!fs.existsSync(SAMPLE_PATH), '샘플 도면 파일이 없습니다.')
+    test.skip(!supabaseAuthAvailable(), 'Supabase E2E 인증 env가 없습니다.')
 
+    await loginAs(context)
     await page.goto('/')
     const input = page.locator('input[type="file"]')
     await input.setInputFiles(SAMPLE_PATH)
