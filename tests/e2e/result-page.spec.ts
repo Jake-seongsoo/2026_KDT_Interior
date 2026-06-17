@@ -59,28 +59,30 @@ test.describe('결과 페이지 E2E', () => {
     await expect(page.locator('h1:has-text("호텔라이크")')).toBeVisible()
   })
 
-  test('SVG 배치도 렌더링', async ({ page }) => {
+  test('2D 배치도 표시', async ({ page }) => {
     await page.goto(`/result/${MOCK_RENDER.result_id}`)
-    await expect(page.locator('svg')).toBeVisible()
+    await expect(page.getByText('2D 공간 배치도')).toBeVisible()
   })
 
   test('방 탭 개수 확인', async ({ page }) => {
     await page.goto(`/result/${MOCK_RENDER.result_id}`)
-    // 거실, 주방 탭이 있어야 함
-    await expect(page.locator('button:has-text("거실")')).toBeVisible()
-    await expect(page.locator('button:has-text("주방")')).toBeVisible()
+    // 거실, 주방 탭이 있어야 함 (room-tab으로 배치도 셀과 구분)
+    const tabs = page.getByTestId('room-tab')
+    await expect(tabs).toHaveCount(2)
+    await expect(tabs.filter({ hasText: '거실' })).toBeVisible()
+    await expect(tabs.filter({ hasText: '주방' })).toBeVisible()
   })
 
   test('AI 생성 이미지 고지 표시 (RISK-08)', async ({ page }) => {
     await page.goto(`/result/${MOCK_RENDER.result_id}`)
-    await expect(page.locator('text=AI 생성 이미지')).toBeVisible()
+    await expect(page.locator('text=AI 생성 이미지').first()).toBeVisible()
   })
 
   test('render_url이 null인 방도 에러 없이 표시', async ({ page }) => {
     await page.goto(`/result/${MOCK_RENDER.result_id}`)
     // 주방 탭 클릭
-    await page.locator('button:has-text("주방")').click()
-    await expect(page.locator('text=이미지 생성 실패')).toBeVisible()
+    await page.getByTestId('room-tab').filter({ hasText: '주방' }).click()
+    await expect(page.locator('text=이미지 생성 실패').first()).toBeVisible()
   })
 
   test('면책 문구 표시', async ({ page }) => {
@@ -88,25 +90,41 @@ test.describe('결과 페이지 E2E', () => {
     await expect(page.locator('text=AI가 생성한 이미지')).toBeVisible()
   })
 
+  test('추천 상품 합계(예산 신호) 표시 + 공사비 제외 고지', async ({ page }) => {
+    await page.goto(`/result/${MOCK_RENDER.result_id}`)
+    const budget = page.getByTestId('budget-summary')
+    await expect(budget).toBeVisible()
+    await expect(budget).toContainText('추천 상품 합계')
+    await expect(budget).toContainText('480,000원')
+    await expect(budget).toContainText('시공·공사비는 포함하지 않습니다')
+  })
+
+  test('공유하기 버튼이 1순위(primary)로 노출', async ({ page }) => {
+    await page.goto(`/result/${MOCK_RENDER.result_id}`)
+    const share = page.getByTestId('share-button')
+    await expect(share).toBeVisible()
+    await expect(share).toHaveText(/공유하기/)
+  })
+
   test('홈으로 버튼이 / 로 이동', async ({ page }) => {
     await page.goto(`/result/${MOCK_RENDER.result_id}`)
-    await page.getByRole('link', { name: /홈으로/ }).click()
+    await page.getByRole('link', { name: '홈으로', exact: true }).click()
     await expect(page).toHaveURL('/')
   })
 
-  test('render_session 키가 있을 때 다른 톤 선택 버튼이 /tones/{sessionId}로 이동', async ({ page }) => {
+  test('render_session 키가 있을 때 다른 톤 버튼이 /tones/{sessionId}로 이동', async ({ page }) => {
     await page.goto('/')
     await page.evaluate((data) => {
       sessionStorage.setItem(`render:${data.result_id}`, JSON.stringify(data))
       sessionStorage.setItem(`render_session:${data.result_id}`, 'session-xyz')
     }, MOCK_RENDER)
     await page.goto(`/result/${MOCK_RENDER.result_id}`)
-    await page.getByRole('link', { name: /다른 톤 선택/ }).click()
+    await page.getByRole('link', { name: /다른 톤/ }).click()
     await expect(page).toHaveURL('/tones/session-xyz')
   })
 
-  test('render_session 키가 없으면 다른 톤 선택 버튼은 표시되지 않음', async ({ page }) => {
+  test('render_session 키가 없으면 다른 톤 버튼은 표시되지 않음', async ({ page }) => {
     await page.goto(`/result/${MOCK_RENDER.result_id}`)
-    await expect(page.getByRole('link', { name: /다른 톤 선택/ })).toHaveCount(0)
+    await expect(page.getByRole('link', { name: /다른 톤/ })).toHaveCount(0)
   })
 })

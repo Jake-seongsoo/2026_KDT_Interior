@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { AuthRequiredError, createShareLink, getRenderResult } from '@/lib/api'
 import { ErrorScreen } from '@/components/common/ErrorScreen'
 import { LoadingScreen } from '@/components/common/LoadingScreen'
+import { BudgetSummary } from '@/components/result/BudgetSummary'
 import { LayoutCanvas } from '@/components/result/LayoutCanvas'
 import { RoomTabs } from '@/components/result/RoomTabs'
 import { RefinementModal } from '@/components/result/RefinementModal'
@@ -139,17 +140,24 @@ export default function ResultPage() {
                 {tone.category}
               </span>
               <div className='no-print mt-2 flex flex-wrap gap-2'>
+                {/* 1순위 — 성공 행동: 공유 (primary 강조) */}
                 <Button
-                  asChild
-                  variant='outline'
                   size='sm'
-                  className='border-stone-700 bg-stone-800 text-stone-300 hover:bg-stone-700 hover:text-stone-100'
+                  data-testid='share-button'
+                  className='w-full bg-amber-700 text-white hover:bg-amber-600 sm:w-auto'
+                  onClick={handleShare}
+                  disabled={shareState === 'loading'}
                 >
-                  <Link href='/'>
-                    <Home className='h-4 w-4' />
-                    홈으로
-                  </Link>
+                  <Share2 className='h-4 w-4' />
+                  {shareState === 'copied'
+                    ? '링크 복사됨!'
+                    : shareState === 'error'
+                      ? '복사 실패'
+                      : shareState === 'loading'
+                        ? '생성 중...'
+                        : '공유하기'}
                 </Button>
+                {/* 보조 — 재탐색 동선 (다른 톤·정밀화) */}
                 {sessionId && (
                   <>
                     <Button
@@ -164,8 +172,9 @@ export default function ResultPage() {
                       </Link>
                     </Button>
                     <Button
+                      variant='outline'
                       size='sm'
-                      className='bg-amber-700 text-white hover:bg-amber-600'
+                      className='border-stone-700 bg-stone-800 text-stone-300 hover:bg-stone-700 hover:text-stone-100'
                       onClick={() => setRefinementOpen(true)}
                     >
                       <Settings2 className='h-4 w-4' />
@@ -173,22 +182,7 @@ export default function ResultPage() {
                     </Button>
                   </>
                 )}
-                <Button
-                  variant='outline'
-                  size='sm'
-                  className='border-stone-700 bg-stone-800 text-stone-300 hover:bg-stone-700 hover:text-stone-100'
-                  onClick={handleShare}
-                  disabled={shareState === 'loading'}
-                >
-                  <Share2 className='h-4 w-4' />
-                  {shareState === 'copied'
-                    ? '링크 복사됨!'
-                    : shareState === 'error'
-                      ? '복사 실패'
-                      : shareState === 'loading'
-                        ? '생성 중...'
-                        : '공유'}
-                </Button>
+                {/* 부가 동선 (PDF·홈) */}
                 <Button
                   variant='outline'
                   size='sm'
@@ -197,6 +191,17 @@ export default function ResultPage() {
                 >
                   <FileDown className='h-4 w-4' />
                   PDF 저장
+                </Button>
+                <Button
+                  asChild
+                  variant='outline'
+                  size='sm'
+                  className='border-stone-700 bg-stone-800 text-stone-300 hover:bg-stone-700 hover:text-stone-100'
+                >
+                  <Link href='/'>
+                    <Home className='h-4 w-4' />
+                    홈으로
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -279,6 +284,12 @@ export default function ResultPage() {
             onRoomClick={handleRoomClick}
           />
         </div>
+
+        {/* 예산 신호 — 추천 상품 합계 + 입력 예산 대비 (공사비 제외) */}
+        <BudgetSummary
+          rooms={data.room_results}
+          budget10kWon={appliedRefinement?.budget_10k_won}
+        />
 
         {/* 방별 제안 */}
         <section ref={roomTabsRef} className='scroll-mt-4'>

@@ -111,6 +111,9 @@ export default function HomePage() {
           <p className='mt-6 max-w-lg text-base leading-8 text-stone-500'>
             AI가 평면도를 분석해 공간 구성을 파악하고, 어울리는 톤과 방별 연출안, 추천 가구까지 한 흐름으로 제안합니다.
           </p>
+          <p className='mt-3 max-w-lg text-sm leading-7 text-stone-400'>
+            아직 살기 전인 새 집도 괜찮아요. 가구 없이 방 구성만으로 인테리어 방향을 잡아드립니다.
+          </p>
 
           {/* 스텝 표시 */}
           <div className='mt-10 space-y-4'>
@@ -169,6 +172,14 @@ export default function HomePage() {
               {mode === 'auto'
                 ? '공급면적과 도면 이미지를 입력해 주세요.'
                 : '도면 + 원하는 분위기를 함께 입력해 주세요.'}
+            </p>
+          </div>
+
+          {/* 도면 입력 안내 — 방 사진이 아닌 평면도 (B1) */}
+          <div className='mb-4 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5'>
+            <span className='text-base leading-none'>📐</span>
+            <p className='text-xs leading-5 text-amber-800'>
+              방 안을 찍은 <span className='font-semibold'>사진이 아니라 평면도</span>를 올려주세요. 분양 도면이나 네이버 부동산 평면도 캡처면 됩니다.
             </p>
           </div>
 

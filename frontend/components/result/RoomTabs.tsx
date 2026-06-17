@@ -33,6 +33,7 @@ export function RoomTabs({ rooms, activeRoomId, onChange, appliancesMap, showPro
             return (
               <button
                 key={room.room_id}
+                data-testid='room-tab'
                 onClick={() => onChange?.(room.room_id)}
                 className={[
                   'shrink-0 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',

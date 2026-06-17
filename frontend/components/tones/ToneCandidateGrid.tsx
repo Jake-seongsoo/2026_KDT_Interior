@@ -56,13 +56,13 @@ export function ToneCandidateGrid({ tones, selectedToneId, onSelect }: ToneCandi
               >
                 {tone.name}
               </h3>
-              <p className='mt-2 line-clamp-3 text-sm leading-6 text-stone-500'>
+              <p className='mt-2 text-sm leading-6 text-stone-500'>
                 {tone.description}
               </p>
 
               <div className='mt-4 rounded-lg bg-stone-50 px-3 py-2.5'>
                 <p className='text-xs font-medium text-stone-400 mb-1'>AI 추천 이유</p>
-                <p className='line-clamp-2 text-xs leading-5 text-stone-600'>{tone.reason}</p>
+                <p className='text-xs leading-5 text-stone-600'>{tone.reason}</p>
               </div>
 
               {/* 색상 이름 태그 */}

@@ -132,7 +132,7 @@ export function FloorPlanUploader({ onSubmit, onBeforeFileSelect, onFileChange, 
               <UploadCloud className='h-6 w-6' />
             </div>
             <p className='text-sm font-semibold text-stone-900'>
-              도면 이미지를 드래그하거나 클릭해서 선택
+              도면 이미지를 선택하세요 <span className='font-normal text-stone-400'>(탭 또는 드래그)</span>
             </p>
             <p className='mt-2 text-xs text-stone-500'>JPG / PNG, 최대 5MB</p>
             <p className='mt-1 text-xs text-stone-400'>
