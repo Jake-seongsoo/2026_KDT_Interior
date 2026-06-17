@@ -5,7 +5,13 @@ import logging
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from core.auth import AuthUser, ensure_owner, verify_jwt
-from models.schemas import AnalyzeResponse, RoomOut, ToneCandidateOut
+from models.schemas import (
+  AnalyzeResponse,
+  RoomCorrection,
+  RoomCorrectionRequest,
+  RoomOut,
+  ToneCandidateOut,
+)
 from services.claude_service import ClaudeService
 from services.storage_service import StorageService
 from services.supabase_service import SupabaseService
@@ -122,6 +128,56 @@ async def get_analyze_result(
   rooms_data = await db.get_rooms_by_session(session_id)
   tones_data = await db.get_tone_candidates_by_session(session_id)
   has_reference = bool(session.get('reference_gcs_path'))
+  return _to_analyze_response(session_id, rooms_data, tones_data, has_reference=has_reference)
+
+
+def _apply_room_corrections(
+  existing_rooms: list[dict],
+  corrections: list[RoomCorrection],
+) -> list[tuple[str, str]]:
+  """세션에 속한 방만 대상으로 유효한 (room_id, room_type) 수정 목록을 만든다 (F003).
+
+  - 세션에 없는 id는 무시한다 (타 세션 방 보호).
+  - 공백뿐인 이름은 무시한다.
+  - 이름이 기존과 동일하면 무시한다 (불필요한 쓰기 방지).
+  """
+  by_id = {str(r['id']): r.get('room_type', '') for r in existing_rooms}
+  updates: list[tuple[str, str]] = []
+  for c in corrections:
+    rid = str(c.id)
+    name = c.room_type.strip()
+    if rid in by_id and name and name != by_id[rid]:
+      updates.append((rid, name))
+  return updates
+
+
+@router.patch('/analyze/{session_id}/rooms', response_model=AnalyzeResponse)
+async def correct_rooms(
+  session_id: str,
+  body: RoomCorrectionRequest,
+  user: AuthUser = Depends(verify_jwt),
+) -> AnalyzeResponse:
+  """Vision이 인식한 방 이름을 사용자가 직접 수정한다 (F003).
+
+  렌더링은 저장된 방(get_render_target_rooms)을 사용하므로 DB에 반영해야
+  이후 렌더에 수정이 반영된다. 본인 세션만 수정 가능(RISK-03).
+  """
+  db = SupabaseService()
+  try:
+    session = await db.get_session(session_id)
+  except ValueError as e:
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+
+  ensure_owner(user, session, detail='이 세션에 접근할 권한이 없습니다.')
+
+  existing_rooms = await db.get_rooms_by_session(session_id)
+  for room_id, room_type in _apply_room_corrections(existing_rooms, body.rooms):
+    await db.update_room_type(room_id, room_type)
+
+  rooms_data = await db.get_rooms_by_session(session_id)
+  tones_data = await db.get_tone_candidates_by_session(session_id)
+  has_reference = bool(session.get('reference_gcs_path'))
+  logger.info('방 정보 수정 완료 (session=%s): %d개 요청', session_id, len(body.rooms))
   return _to_analyze_response(session_id, rooms_data, tones_data, has_reference=has_reference)
 
 

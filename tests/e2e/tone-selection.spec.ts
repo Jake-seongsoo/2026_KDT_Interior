@@ -37,7 +37,7 @@ test.describe('톤 선택 페이지 E2E', () => {
 
   test('톤 미선택 시 시안 만들기 버튼 비활성', async ({ page }) => {
     await page.goto(`/tones/${MOCK_ANALYZE.session_id}`)
-    const btn = page.locator('button:has-text("톤을 선택해주세요")')
+    const btn = page.locator('button:has-text("톤을 선택해 주세요")')
     await expect(btn).toBeDisabled()
   })
 
@@ -46,14 +46,26 @@ test.describe('톤 선택 페이지 E2E', () => {
     // 첫 번째 톤 카드 클릭
     await page.getByTestId('tone-card').first().click()
     // 선택됨 표시
-    await expect(page.locator('text=✓ 선택됨')).toBeVisible()
+    await expect(page.locator('text=선택됨')).toBeVisible()
     // 버튼 활성화
-    const btn = page.locator('button:has-text("으로 시안 만들기")')
+    const btn = page.locator('button:has-text("제안 만들기")')
     await expect(btn).toBeEnabled()
   })
 
   test('방 정보 카드에 방 개수 표시', async ({ page }) => {
     await page.goto(`/tones/${MOCK_ANALYZE.session_id}`)
     await expect(page.locator('text=2개')).toBeVisible()
+  })
+
+  test('방 이름 인라인 편집 UI 진입·취소 (F003)', async ({ page }) => {
+    await page.goto(`/tones/${MOCK_ANALYZE.session_id}`)
+    await page.getByTestId('rooms-edit').click()
+    const input = page.getByLabel('1번 방 이름')
+    await expect(input).toBeVisible()
+    await expect(input).toHaveValue('거실')
+    await input.fill('서재')
+    // 취소하면 편집 모드 종료 + 수정 버튼 복귀
+    await page.getByRole('button', { name: '수정 취소' }).click()
+    await expect(page.getByTestId('rooms-edit')).toBeVisible()
   })
 })

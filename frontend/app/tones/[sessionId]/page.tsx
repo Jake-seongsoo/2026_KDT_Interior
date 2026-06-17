@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
-import { AuthRequiredError, getAnalyzeResult } from '@/lib/api'
+import { AuthRequiredError, getAnalyzeResult, patchRooms } from '@/lib/api'
 import { analyzeStorage, toneStorage } from '@/lib/session-storage'
 import { ErrorScreen } from '@/components/common/ErrorScreen'
 import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { RoomInfoCard } from '@/components/tones/RoomInfoCard'
 import { ToneCandidateGrid } from '@/components/tones/ToneCandidateGrid'
 import { Button } from '@/components/ui/button'
-import type { AnalyzeResponse, ToneCandidateOut } from '@/types/api'
+import type { AnalyzeResponse, RoomCorrection, ToneCandidateOut } from '@/types/api'
 
 export default function TonesPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -57,6 +57,13 @@ export default function TonesPage() {
     router.push(`/render/${sessionId}`)
   }
 
+  // 방 이름 수정 저장 (F003) — DB 반영 후 캐시·상태 갱신
+  const handleRoomsSave = async (corrections: RoomCorrection[]) => {
+    const updated = await patchRooms(sessionId, corrections)
+    analyzeStorage.save(updated.session_id, updated)
+    setData(updated)
+  }
+
   if (error) return <ErrorScreen message={error} />
   if (!data) return <LoadingScreen />
 
@@ -97,7 +104,7 @@ export default function TonesPage() {
         <div className='grid gap-8 lg:grid-cols-[300px_1fr]'>
           {/* 사이드바: 방 정보 */}
           <aside className='lg:sticky lg:top-20 lg:self-start'>
-            <RoomInfoCard rooms={data.rooms} />
+            <RoomInfoCard rooms={data.rooms} onSave={handleRoomsSave} />
           </aside>
 
           {/* 메인: 톤 선택 */}

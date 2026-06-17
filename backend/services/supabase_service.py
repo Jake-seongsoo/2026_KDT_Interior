@@ -111,6 +111,16 @@ class SupabaseService:
     resp = self._db.table('rooms').insert(rows).execute()
     return resp.data
 
+  async def update_room_type(self, room_id: str, room_type: str) -> None:
+    """방 이름을 수정하고 렌더 대상 여부(is_render_target)를 재계산한다 (F003).
+
+    예: '발코니'로 바꾸면 렌더 제외, '거실'로 바꾸면 렌더 대상이 된다.
+    """
+    self._db.table('rooms').update({
+      'room_type': room_type,
+      'is_render_target': room_type not in _NON_RENDER_TYPES,
+    }).eq('id', room_id).execute()
+
   async def get_render_target_rooms(self, session_id: str) -> list[dict]:
     resp = (
       self._db.table('rooms')

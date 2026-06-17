@@ -5,7 +5,8 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi import HTTPException
 
-from routers.analyze import _to_analyze_response, _validate_file
+from models.schemas import RoomCorrection
+from routers.analyze import _apply_room_corrections, _to_analyze_response, _validate_file
 
 SESS = str(uuid.uuid4())
 R1 = str(uuid.uuid4())
@@ -105,3 +106,54 @@ class TestValidateFile:
     with pytest.raises(HTTPException) as exc:
       _validate_file(self._make_file('image/jpeg'), large_data)
     assert exc.value.status_code == 413
+
+
+# ── _apply_room_corrections 테스트 (F003) ──────────────────────────────────
+
+class TestApplyRoomCorrections:
+  def _existing(self):
+    return [
+      {'id': R1, 'room_type': '거실'},
+      {'id': R2, 'room_type': '방2'},
+    ]
+
+  def test_valid_correction_is_applied(self):
+    updates = _apply_room_corrections(
+      self._existing(),
+      [RoomCorrection(id=R2, room_type='안방')],
+    )
+    assert updates == [(R2, '안방')]
+
+  def test_unchanged_name_is_skipped(self):
+    updates = _apply_room_corrections(
+      self._existing(),
+      [RoomCorrection(id=R1, room_type='거실')],
+    )
+    assert updates == []
+
+  def test_whitespace_is_trimmed(self):
+    updates = _apply_room_corrections(
+      self._existing(),
+      [RoomCorrection(id=R2, room_type='  안방  ')],
+    )
+    assert updates == [(R2, '안방')]
+
+  def test_id_not_in_session_is_ignored(self):
+    other_id = str(uuid.uuid4())
+    updates = _apply_room_corrections(
+      self._existing(),
+      [RoomCorrection(id=other_id, room_type='침실')],
+    )
+    assert updates == []
+
+  def test_multiple_corrections(self):
+    updates = _apply_room_corrections(
+      self._existing(),
+      [
+        RoomCorrection(id=R1, room_type='주방'),
+        RoomCorrection(id=R2, room_type='안방'),
+      ],
+    )
+    assert (R1, '주방') in updates
+    assert (R2, '안방') in updates
+    assert len(updates) == 2

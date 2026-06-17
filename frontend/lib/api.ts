@@ -4,6 +4,7 @@ import type {
   HistoryResponse,
   RenderRequest,
   RenderResponse,
+  RoomCorrection,
   ShareCreateResponse,
 } from '@/types/api'
 
@@ -91,6 +92,27 @@ export async function postRender(body: RenderRequest): Promise<RenderResponse> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(err.detail ?? '렌더링 요청에 실패했습니다.')
+  }
+
+  return res.json()
+}
+
+/** 방 이름을 수정한다 (F003 — 본인 세션만). 수정 반영된 AnalyzeResponse를 반환한다. */
+export async function patchRooms(
+  sessionId: string,
+  rooms: RoomCorrection[],
+): Promise<AnalyzeResponse> {
+  const headers = await getAuthHeaders()
+
+  const res = await fetch(`${BASE}/analyze/${sessionId}/rooms`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify({ rooms }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? '방 정보 수정에 실패했습니다.')
   }
 
   return res.json()

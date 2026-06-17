@@ -47,6 +47,18 @@ class AnalyzeResponse(BaseModel):
   # 도면·레퍼런스 URL은 절대 포함하지 않는다 (RISK-02)
 
 
+# ── 방 정보 수정 (F003) ─────────────────────────────────────
+
+class RoomCorrection(BaseModel):
+  """사용자가 수정한 방 1개 — 방 id와 새 이름."""
+  id: UUID
+  room_type: str = Field(min_length=1, max_length=20)
+
+
+class RoomCorrectionRequest(BaseModel):
+  rooms: list[RoomCorrection]
+
+
 # ── /render 요청·응답 모델 ─────────────────────────────────
 
 class Appliance(BaseModel):

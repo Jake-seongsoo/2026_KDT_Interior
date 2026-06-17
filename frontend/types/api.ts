@@ -33,6 +33,13 @@ export interface AnalyzeResponse {
   has_reference?: boolean
 }
 
+// ── 방 정보 수정 (F003) ─────────────────────────────────────
+
+export interface RoomCorrection {
+  id: string
+  room_type: string
+}
+
 export interface Appliance {
   name: string  // 한국어 가전명 (냉장고, 세탁기 등)
   room: string  // 배치할 방 유형 (주방, 다용도실 등)
