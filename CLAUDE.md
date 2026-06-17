@@ -189,6 +189,9 @@ models/       ← Pydantic 스키마 (schemas.py 단일 파일)
 - F007 정밀화 맞춤 렌더링 ✅ (2026-05-23): 결과 페이지 "정밀화" 버튼 → RefinementModal(shadcn Dialog) → `/render` 재호출. 정밀화 파라미터: budget_10k_won, family_type, style_keywords(최대3), keep_appliances. DB: recommendation_results.refinement_params jsonb 컬럼 추가 (0003_add_refinement_params.sql). shadcn UI 정식 도입(components.json, dialog, label).
 - F008 공유 링크 ✅ (2026-06): `POST /share`(본인 결과만) + `GET /share/{id}`(비로그인, 상품 제외, 조회수+1) → `/share/[shareId]` SSR 페이지(OG 미리보기). 공유 토큰은 share_links.id(uuid)로 result_id 미노출. 결과 페이지에 공유(링크 복사)·PDF 저장(window.print) 버튼. RenderResponse엔 도면·개인정보 없어 비로그인 노출 안전.
 - F011 분석 기록 조회 ✅ (2026-06): `GET /history` → `/history` 페이지. 세션(도면) 최근 20개 + 결과 중첩, 도면 썸네일은 Signed URL(RISK-02 준수). 본인 user_id 필터로 타인 데이터 차단. SupabaseService 일괄 조회(N+1 없음), useAuthUser 훅으로 로그인 상태 공통화.
+- F003 방 이름 인라인 수정 ✅ (2026-06): 톤 페이지 RoomInfoCard 연필 버튼 → 인라인 편집 → `PATCH /analyze/{session_id}/rooms`(본인 세션만, `update_room_type`이 is_render_target 재계산). 렌더는 저장된 방을 읽으므로 수정이 다음 시안에 반영. 순수 헬퍼 `_apply_room_corrections`(세션 외 id·공백·무변경 필터)로 단위 테스트.
+- UX 디자인 리서치 반영 ✅ (2026-06): 결과 화면 공유 CTA를 1순위 primary로 격상(재탐색=다른 톤·정밀화는 보조), 톤 카드 추천 근거 line-clamp 해제, 업로드 화면 "방 사진 아닌 평면도"·빈 집 전제 안내, 결과에 추천 상품 합계+예산 대비 신호(`BudgetSummary`, 공사비 제외 명시). 근거 문서: `docs/디자인_브리프.md` 외 리서치 5종.
+- fc8 공사비 단가 예산 추정: 미구현(Phase 2 보류). 현재 예산 신호는 추천 상품(가구·소품) 합계만 표시하며 시공비 불포함.
 - fc10: Vision 정확도 80%+ 달성 후 벽 분류 기능 (SNS 이미지 → 내 방 적용 가능 여부)
 
 ## DB 스키마 주요 테이블
